@@ -2,6 +2,8 @@ import tkinter as tk
 from app import Window
 from field import Tile
 
+from analyze import *
+
 from main_thread import *
 
 from array import *
@@ -54,7 +56,13 @@ def redraw(win):
 
 #Sets up tkinter
 def main():
+  analytics = Analyze()
+  analytics.startTime()
+  global root
+
   root = tk.Tk()
+
+  threadMain = mainThread()
 
 
 
@@ -64,6 +72,7 @@ def main():
   # Fullscreen
   root.attributes("-fullscreen", True)
 
+  #root.bind("<Escape>", )
 
   for x in range(0, grid_size):
     for y in range(0, grid_size):
@@ -76,17 +85,18 @@ def main():
 
   #Walls
   for i in range(0, grid_size):
-      t = find_tile(i,0)
-      t.set_type(1)
-      #print(t)
-      t = find_tile(i,grid_size-1)
-      t.set_type(1)
-      #print(t)
-      t = find_tile(0, i)
-      t.set_type(1)
-      t = find_tile(grid_size-1, i)
-      t.set_type(1)
+    t = find_tile(i,0)
+    t.set_type(1)
+    #print(t)
+    t = find_tile(i,grid_size-1)
+    t.set_type(1)
+    #print(t)
+    t = find_tile(0, i)
+    t.set_type(1)
 
+    t = find_tile(grid_size-1, i)
+    t.set_type(1)
+   
 
   
 
@@ -97,9 +107,17 @@ def main():
   win.canvas.pack(expand=1, fill=tk.BOTH) 
   win.pack(fill=tk.BOTH, expand=1)
 
+  threadMain.start()
+
+  analytics.endTime()
+  print(analytics.getSecs())
+
+  win.update_time(analytics.getSecs())
+
   root.mainloop()
 
-
+#def escape_key():
+#  root.attributes("-fullscreen", False)
 
 
 if __name__ == '__main__':

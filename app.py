@@ -5,15 +5,23 @@ from numpy import resize
 
 
 
+
 class Window(tk.Frame):
+
+  MAINWINDOW = None
+
+  RUN_TEST_ALG = 0
 
   canvas = 0
 
   upperFrame = None
   analyticFrame = None
   controlFrame = None
+  outputFrame = None
+  timeFrame = None
 
   lbl_time_var = None
+  lbl_op = None
 
   def __init__(self):
     super().__init__()
@@ -24,6 +32,8 @@ class Window(tk.Frame):
 
   def initUI(self):
 
+    Window.MAINWINDOW = self 
+
     self.master.title("Pathfinding")
 
 
@@ -31,7 +41,9 @@ class Window(tk.Frame):
     self.upperFrame = tk.Frame(self)
     self.controlFrame = tk.Frame(self.upperFrame)
     self.analyticFrame = tk.Frame(self.upperFrame)
-
+    self.timeFrame = tk.Frame(self.analyticFrame)
+    self.outputFrame = tk.Frame(self.analyticFrame)
+    
     
     #screenwidth = self.master.winfo_screenwidth()
     #creenheight = self.master.winfo_screenheight()
@@ -54,9 +66,17 @@ class Window(tk.Frame):
     lbl_analyze = tk.Label(self.analyticFrame, text="ANALYTICS")
     lbl_analyze.pack()#side=tk.RIGHT, padx=5, pady=5)
 
-    lbl_time = tk.Label(self.analyticFrame, text="Time: ")
+    lbl_time = tk.Label(self.timeFrame, text="Time: ")
     lbl_time.pack()#side=tk.RIGHT, padx=5, pady=5)
 
+    lbl_op_message = tk.Label(self.outputFrame, text="Output: ")
+    lbl_op_message.pack()#side = tk.RIGHT)#side=tk.RIGHT, padx=5, pady=5)
+
+    self.lbl_op = tk.Label(self.outputFrame, text="-")
+    self.lbl_op.pack()#side = tk.RIGHT)
+
+    testButton = tk.Button(self.controlFrame, text="TEST", command=testAlgorithm)
+    testButton.pack()
 
     startButton = tk.Button(self.controlFrame, text="START", command=startProcess)
     startButton.pack()
@@ -64,12 +84,16 @@ class Window(tk.Frame):
     endButton = tk.Button(self.controlFrame, text="END", command=endProcess)
     endButton.pack()
 
+    
 
-    self.lbl_time_var = tk.Label(self.analyticFrame, text="-")
+
+    self.lbl_time_var = tk.Label(self.timeFrame, text="-")
     self.lbl_time_var.pack()
 
 
     self.controlFrame.pack(side=tk.LEFT)
+    self.timeFrame.pack(side=tk.LEFT)
+    self.outputFrame.pack(side=tk.RIGHT)
     self.analyticFrame.pack(side=tk.RIGHT, padx = 500)
 
     self.upperFrame.pack()
@@ -92,6 +116,10 @@ class Window(tk.Frame):
     #self.analyticFrame.pack()
     #self.pack(fill=tk.BOTH, expand=1)
 
+  def set_output(self, value):
+    self.lbl_op["text"] = str(value)
+    self.lbl_op.pack()
+
 
 def shortenNumber(value):
   newValue = 10000 * value
@@ -109,4 +137,7 @@ def startProcess():
 
 def endProcess():
   print("End process")
+
+def testAlgorithm():
+  Window.RUN_TEST_ALG = 1
 

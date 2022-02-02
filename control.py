@@ -1,9 +1,8 @@
 import tkinter as tk
+
 from app import Window
 from field import Tile
-
 from analyze import *
-
 from main_thread import *
 
 from array import *
@@ -46,13 +45,39 @@ def draw_tile(winndow, tile):
   winndow.canvas.create_rectangle(xPos, yPos, xPos+tile_size, yPos+tile_size, outline="#000", fill=tile.get_color())
 
 def find_tile(posX, posY):
-  for tile in tiles:
-    if ((tile.positionX == posX) and (tile.positionY == posY)):
-      return tile
+
+  findArray = tiles[posY] 
+  tile = findArray[posX]
+  return tile
+
+
+  # for tileList in tiles:
+  #   for tile in tileList:
+  #     if ((tile.positionX == posX) and (tile.positionY == posY)):
+  #       return tile
 
 def redraw(win):
-  for tile in tiles:
-    draw_tile(win, tile)
+    for tileList in tiles:
+      for tile in tileList:
+        draw_tile(win, tile)
+
+def create_field():
+    for y in range(0, grid_size):
+
+      appendedArray = []
+
+      for x in range(0, grid_size):
+        newTile = Tile(x,y,1)
+        #draw_tile(win, newTile)
+        appendedArray.append(newTile)
+      
+      tiles.append(appendedArray)
+
+def on_closing():
+  print("Closing")
+  mainThread.RUNNING = False
+  root.destroy()
+
 
 #Sets up tkinter
 def main():
@@ -70,16 +95,12 @@ def main():
 
 
   # Fullscreen
-  root.attributes("-fullscreen", True)
+  root.attributes("-fullscreen", False)
 
   #root.bind("<Escape>", )
 
-  for x in range(0, grid_size):
-    for y in range(0, grid_size):
-      newTile = Tile(x,y,1)
-      #draw_tile(win, newTile)
-      tiles.append(newTile)
 
+  create_field()
 
 
 
@@ -97,7 +118,11 @@ def main():
     t = find_tile(grid_size-1, i)
     t.set_type(1)
    
+  t = find_tile(9, 10)
+  t.set_type(3)
 
+  t = find_tile(15, 10)
+  t.set_type(2)
   
 
   #root.geometry("400x100+300+300")
@@ -105,14 +130,18 @@ def main():
   redraw(win)
 
   win.canvas.pack(expand=1, fill=tk.BOTH) 
-  win.pack(fill=tk.BOTH, expand=1)
+  win.pack()
 
   threadMain.start()
 
   analytics.endTime()
   print(analytics.getSecs())
 
+  
   win.update_time(analytics.getSecs())
+
+  root.protocol("WM_DELETE_WINDOW", on_closing)
+
 
   root.mainloop()
 
@@ -122,3 +151,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

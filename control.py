@@ -2,19 +2,20 @@ import tkinter as tk
 
 from app import Window
 from field import Tile
-from analyze import *
+#from analyze import *
 from main_thread import *
 
 from array import *
 
 
-tile_size = 35
+
 grid_size = 20
 spacing = 0
 start_offset = 20
 
 
 tiles = []
+
 #Init array
 #refactor as 2d array
 
@@ -39,10 +40,7 @@ Green - start   Hex: 26532B
 #def draw_tile(winndow, x=0, y=0):
   #winndow.canvas.create_rectangle(x, y, x+tile_size, y+tile_size, outline="#000", fill="#0AB2E5")
 
-def draw_tile(winndow, tile):
-  xPos = tile.positionX * tile_size
-  yPos = tile.positionY * tile_size
-  winndow.canvas.create_rectangle(xPos, yPos, xPos+tile_size, yPos+tile_size, outline="#000", fill=tile.get_color())
+
 
 def find_tile(posX, posY):
 
@@ -56,10 +54,6 @@ def find_tile(posX, posY):
   #     if ((tile.positionX == posX) and (tile.positionY == posY)):
   #       return tile
 
-def redraw(win):
-    for tileList in tiles:
-      for tile in tileList:
-        draw_tile(win, tile)
 
 def create_field():
     for y in range(0, grid_size):
@@ -81,8 +75,8 @@ def on_closing():
 
 #Sets up tkinter
 def main():
-  analytics = Analyze()
-  analytics.startTime()
+  #analytics = Analyze()
+  #analytics.startTime()
   global root
 
   root = tk.Tk()
@@ -118,30 +112,38 @@ def main():
     t = find_tile(grid_size-1, i)
     t.set_type(1)
    
+
+  
   t = find_tile(9, 10)
   t.set_type(3)
+  threadMain.startingTile = t
+  #startingTile = t
 
   t = find_tile(15, 10)
   t.set_type(2)
+  threadMain.goalTile = t
   
 
   #root.geometry("400x100+300+300")
 
-  redraw(win)
+  #redraw(win)
+  win.redraw(tiles)
 
   win.canvas.pack(expand=1, fill=tk.BOTH) 
   win.pack()
 
+
+  threadMain.passField(tiles)
+
   threadMain.start()
 
-  analytics.endTime()
-  print(analytics.getSecs())
+  #analytics.endTime()
+  #print(analytics.getSecs())
 
   
-  win.update_time(analytics.getSecs())
+  #win.update_time(analytics.getSecs())
 
   root.protocol("WM_DELETE_WINDOW", on_closing)
-
 
   root.mainloop()
 

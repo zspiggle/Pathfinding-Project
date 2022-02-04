@@ -3,6 +3,7 @@ import tkinter as tk
 
 from numpy import resize
 
+#from field import Tile
 
 
 
@@ -13,6 +14,8 @@ class Window(tk.Frame):
   RUN_TEST_ALG = 0
 
   canvas = 0
+
+  tile_size = 35
 
   upperFrame = None
   analyticFrame = None
@@ -120,6 +123,17 @@ class Window(tk.Frame):
     self.lbl_op["text"] = str(value)
     self.lbl_op.pack()
 
+  def redraw(self, tiles):
+    for tileList in tiles:
+      for tile in tileList:
+        self.draw_tile(tile)
+
+
+  def draw_tile(self, tile):
+    xPos = tile.positionX * self.tile_size
+    yPos = tile.positionY * self.tile_size
+    self.canvas.create_rectangle(xPos, yPos, xPos+self.tile_size, yPos+self.tile_size, outline="#000", fill=tile.get_color())
+#---------------------------------
 
 def shortenNumber(value):
   newValue = 10000 * value

@@ -17,7 +17,7 @@ class Analyze():
 
 
   def getSecs(self):
-    return (self.difference)# * 0.001)  
+    return self.difference 
   
   def reset(self):
     self.startTime = 0

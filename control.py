@@ -99,29 +99,29 @@ def main():
 
 
   #Walls
-  for i in range(0, grid_size):
-    t = find_tile(i,0)
-    t.set_type(1)
-    #print(t)
-    t = find_tile(i,grid_size-1)
-    t.set_type(1)
-    #print(t)
-    t = find_tile(0, i)
-    t.set_type(1)
+  # for i in range(0, grid_size):
+  #   t = find_tile(i,0)
+  #   t.set_type(1)
+  #   #print(t)
+  #   t = find_tile(i,grid_size-1)
+  #   t.set_type(1)
+  #   #print(t)
+  #   t = find_tile(0, i)
+  #   t.set_type(1)
 
-    t = find_tile(grid_size-1, i)
-    t.set_type(1)
+  #   t = find_tile(grid_size-1, i)
+  #   t.set_type(1)
    
 
   
-  t = find_tile(9, 10)
-  t.set_type(3)
-  threadMain.startingTile = t
-  #startingTile = t
+  # t = find_tile(9, 10)
+  # t.set_type(3)
+  # threadMain.startingTile = t
+  # #startingTile = t
 
-  t = find_tile(15, 10)
-  t.set_type(2)
-  threadMain.goalTile = t
+  # t = find_tile(15, 10)
+  # t.set_type(2)
+  # threadMain.goalTile = t
   
 
   #root.geometry("400x100+300+300")
@@ -132,6 +132,32 @@ def main():
   win.canvas.pack(expand=1, fill=tk.BOTH) 
   win.pack()
 
+  win.passTiles(tiles)
+
+  win.loadMap(
+    [
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+    ]
+  )
 
   threadMain.passField(tiles)
 

@@ -12,6 +12,8 @@ class Tile:
   selected = False
   inspected = False
 
+  astar_value = 0
+
   """
   Types:
   0-empty

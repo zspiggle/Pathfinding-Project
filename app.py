@@ -11,7 +11,9 @@ class Window(tk.Frame):
 
   MAINWINDOW = None
 
+  RUNNING = 0
   RUN_TEST_ALG = 0
+  RUN_A_STAR = 0
 
   canvas = 0
 
@@ -26,12 +28,18 @@ class Window(tk.Frame):
   lbl_time_var = None
   lbl_op = None
 
+  tiles = None
+
+  startingTile = None
+  goalTile = None
+
   def __init__(self):
     super().__init__()
 
     self.initUI()
 
-
+  def passTiles(self, tileRef):
+    self.tiles = tileRef
 
   def initUI(self):
 
@@ -79,7 +87,13 @@ class Window(tk.Frame):
     self.lbl_op.pack()#side = tk.RIGHT)
 
     testButton = tk.Button(self.controlFrame, text="TEST", command=testAlgorithm)
-    testButton.pack()
+    testButton.pack(side = tk.RIGHT)
+
+    astarButton = tk.Button(self.controlFrame, text="A*", command=astarAlgorithm)
+    astarButton.pack(side = tk.RIGHT)
+
+    resetButton = tk.Button(self.controlFrame, text="RESET", command=reset)
+    resetButton.pack(side = tk.LEFT)
 
     startButton = tk.Button(self.controlFrame, text="START", command=startProcess)
     startButton.pack()
@@ -133,6 +147,25 @@ class Window(tk.Frame):
     xPos = tile.positionX * self.tile_size
     yPos = tile.positionY * self.tile_size
     self.canvas.create_rectangle(xPos, yPos, xPos+self.tile_size, yPos+self.tile_size, outline="#000", fill=tile.get_color())
+
+
+
+  def loadMap(self, newTileTypes):
+    counter = 0
+
+    for lis in self.tiles:
+      for t in lis:
+        t.tileType = newTileTypes[counter]
+
+        if (t.tileType == 2):
+          self.goalTile = t
+        elif (t.tileType == 3):
+          self.startingTile = t
+
+        counter += 1
+
+    self.redraw(self.tiles)
+
 #---------------------------------
 
 def shortenNumber(value):
@@ -153,5 +186,18 @@ def endProcess():
   print("End process")
 
 def testAlgorithm():
-  Window.RUN_TEST_ALG = 1
+  if (Window.RUNNING == 0):
+    Window.RUN_TEST_ALG = 1
 
+def astarAlgorithm():
+  if (Window.RUNNING == 0):
+    Window.RUN_A_STAR = 1
+    Window.RUNNING = 1
+
+def reset():
+  #print("Resetting")
+  for l in Window.MAINWINDOW.tiles:
+    for t in l:
+      t.inspected = False
+      t.selected = False
+  Window.MAINWINDOW.redraw(Window.MAINWINDOW.tiles)

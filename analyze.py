@@ -8,12 +8,15 @@ class Analyze():
   difference = 0
 
   def startTime(self):
-    self.startTimeVal = time()#time_ns()
+    self.startTimeVal = time_ns()#time()#time_ns()
+    print(self.startTimeVal)
 
 
   def endTime(self):
-    self.endTimeVal = time()#time_ns()
+    self.endTimeVal = time_ns()#time()#time_ns()
+    print(self.endTimeVal)
     self.difference = self.endTimeVal - self.startTimeVal
+    print(self.difference)
 
 
   def getSecs(self):

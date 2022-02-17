@@ -12,7 +12,7 @@ from numpy import resize
 
 from layouts import *
 
-from main_thread import mainThread
+#from main_thread import mainThread
 
 
 class Window(tk.Frame):
@@ -42,7 +42,7 @@ class Window(tk.Frame):
   goalTile = None
 
   nextLevel = 1
-  maxLevel = 3
+  maxLevel = 4
 
   algorithm = "test"
 
@@ -239,7 +239,7 @@ def reset():
 
 
 def changeLayout():
-  if Window.MAINWINDOW.nextLevel <= Window.MAINWINDOW.maxLevel: #THIS IS THE MAX NUMBER OF LEVELS IN LAYOUTS, DO NOT FORGET TO CHANGE THIS WHENEVER ADDING A LEVEL
+  if Window.MAINWINDOW.nextLevel < Window.MAINWINDOW.maxLevel: #THIS IS THE MAX NUMBER OF LEVELS IN LAYOUTS, DO NOT FORGET TO CHANGE THIS WHENEVER ADDING A LEVEL
     Window.MAINWINDOW.nextLevel += 1
   else:
     Window.MAINWINDOW.nextLevel = 1
@@ -254,7 +254,7 @@ def changeLayout():
 
 #========================================================================================================
 
-"""
+
 class mainThread(threading.Thread):
 
   #RUNNING = False
@@ -263,7 +263,7 @@ class mainThread(threading.Thread):
 
   algorithm = "test"
 
-  analytics = Analyze()
+  analytics = None
   
 
   field = None 
@@ -284,7 +284,9 @@ class mainThread(threading.Thread):
 
 
   def run(self):
-    algorithm = Window.MAINWINDOW.algorithm
+    self.analytics = Analyze()
+
+    self.algorithm = Window.MAINWINDOW.algorithm
 
     match self.algorithm:
       case "test": self.testAlgorithm()
@@ -309,6 +311,8 @@ class mainThread(threading.Thread):
 
 
   def testAlgorithm(self):
+    print("RUNNING TEST ALGORITHM")
+
     self.analytics.startTime()
     # Window.MAINWINDOW.set_output("Running test algorithm")
 
@@ -319,6 +323,7 @@ class mainThread(threading.Thread):
     foundGoal = False
     newposX = startPosX
     newposY = startPosY
+
 
     while (not foundGoal):
       newposX = newposX + 1
@@ -332,16 +337,15 @@ class mainThread(threading.Thread):
     
     self.analytics.endTime()
     Window.MAINWINDOW.set_output("Test algorithm has found goal")
-
     Window.MAINWINDOW.redraw(tiles)
     Window.MAINWINDOW.update_time(self.analytics.getSecs())
-    print(self.analytics.getSecs())
+    #print(self.analytics.getSecs())
 
 
     #Window.RUNNING = 0
 
   def astarAlgorithm(self):
-
+    print("RUNNING A* ALGORITHM")
     self.analytics.startTime()
     # Window.MAINWINDOW.set_output("Running test algorithm")
 
@@ -356,6 +360,9 @@ class mainThread(threading.Thread):
     while (not foundGoal):
       newposX = newposX + 1
 
+      
+
+
       #currentArray = tiles[newposY]
       currentTile = tiles[newposY][newposX]#currentArray[newposX]
       currentTile.selected = True
@@ -369,4 +376,3 @@ class mainThread(threading.Thread):
     Window.MAINWINDOW.update_time(self.analytics.getSecs())
 #    Window.RUNNING = 0 
     
-"""

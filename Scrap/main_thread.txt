@@ -2,7 +2,7 @@
 
 import threading
 from tracemalloc import start
-from app import Window
+#from app import Window
 from analyze import Analyze
 
 
@@ -14,7 +14,7 @@ class mainThread(threading.Thread):
 
   #REDRAW = False
 
-  algorithm
+  algorithm = "test"
 
   analytics = Analyze()
   
@@ -38,6 +38,7 @@ class mainThread(threading.Thread):
 
   def run(self):
     algorithm = Window.MAINWINDOW.algorthim
+
     match self.algorithm:
       case "test": self.testAlgorithm()
       case "A*": self.astarAlgorithm()

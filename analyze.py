@@ -14,9 +14,9 @@ class Analyze():
 
   def endTime(self):
     self.endTimeVal = time_ns()#time()#time_ns()
-    print(self.endTimeVal)
+    #print(self.endTimeVal)
     self.difference = self.endTimeVal - self.startTimeVal
-    print(self.difference)
+    #print(self.difference)
 
 
   def getSecs(self):

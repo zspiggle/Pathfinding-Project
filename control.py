@@ -3,9 +3,11 @@ import tkinter as tk
 from app import Window
 from field import Tile
 #from analyze import *
-from main_thread import *
+#from main_thread import 
 
 from array import *
+
+
 
 
 
@@ -68,8 +70,8 @@ def create_field():
       tiles.append(appendedArray)
 
 def on_closing():
-  print("Closing")
-  mainThread.RUNNING = False
+  #print("Closing")
+  #mainThread.RUNNING = False
   root.destroy()
 
 
@@ -81,7 +83,7 @@ def main():
 
   root = tk.Tk()
 
-  threadMain = mainThread()
+  #threadMain = mainThread()
 
 
 
@@ -159,9 +161,9 @@ def main():
     ]
   )
 
-  threadMain.passField(tiles)
+  #threadMain.passField(tiles)
 
-  threadMain.start()
+  #threadMain.start()
 
   #analytics.endTime()
   #print(analytics.getSecs())

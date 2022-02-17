@@ -1,19 +1,27 @@
 import math
 import tkinter as tk
+from tkinter.tix import WINDOW
+import threading
+from analyze import Analyze
+
+
 
 from numpy import resize
 
 #from field import Tile
 
+from layouts import *
+
+from main_thread import mainThread
 
 
 class Window(tk.Frame):
 
   MAINWINDOW = None
 
-  RUNNING = 0
-  RUN_TEST_ALG = 0
-  RUN_A_STAR = 0
+  #RUNNING = 0
+  #RUN_TEST_ALG = 0
+  #RUN_A_STAR = 0
 
   canvas = 0
 
@@ -32,6 +40,11 @@ class Window(tk.Frame):
 
   startingTile = None
   goalTile = None
+
+  nextLevel = 1
+  maxLevel = 3
+
+  algorithm = "test"
 
   def __init__(self):
     super().__init__()
@@ -101,7 +114,8 @@ class Window(tk.Frame):
     endButton = tk.Button(self.controlFrame, text="END", command=endProcess)
     endButton.pack()
 
-    
+    changeLevelButton = tk.Button(self.controlFrame, text="CHANGE LEVEL", command=changeLayout)
+    changeLevelButton.pack()
 
 
     self.lbl_time_var = tk.Label(self.timeFrame, text="-")
@@ -153,6 +167,8 @@ class Window(tk.Frame):
   def loadMap(self, newTileTypes):
     counter = 0
 
+    self.canvas.delete("all")
+    
     for lis in self.tiles:
       for t in lis:
         t.tileType = newTileTypes[counter]
@@ -162,9 +178,10 @@ class Window(tk.Frame):
         elif (t.tileType == 3):
           self.startingTile = t
 
+        self.draw_tile(t)
         counter += 1
 
-    self.redraw(self.tiles)
+    #self.redraw(self.tiles)
 
 #---------------------------------
 
@@ -185,19 +202,171 @@ def startProcess():
 def endProcess():
   print("End process")
 
+
 def testAlgorithm():
-  if (Window.RUNNING == 0):
-    Window.RUN_TEST_ALG = 1
+  newThread = mainThread()
+
+  Window.MAINWINDOW.algorithm = algorithm = "test"
+  newThread.passField(Window.MAINWINDOW.tiles)
+
+  newThread.start()
+
+  # if (Window.RUNNING == 0):
+  #   Window.RUN_TEST_ALG = 1
 
 def astarAlgorithm():
-  if (Window.RUNNING == 0):
-    Window.RUN_A_STAR = 1
-    Window.RUNNING = 1
+  newThread = mainThread()
+
+  Window.MAINWINDOW.algorithm = algorithm = "A*"
+  newThread.passField(Window.MAINWINDOW.tiles)
+
+  newThread.start()
+  
+  # if (Window.RUNNING == 0):
+  #   Window.RUN_A_STAR = 1
+  #   Window.RUNNING = 1
 
 def reset():
   #print("Resetting")
+
   for l in Window.MAINWINDOW.tiles:
     for t in l:
       t.inspected = False
       t.selected = False
+  Window.MAINWINDOW.set_output("-")
+  Window.MAINWINDOW.update_time(0)
   Window.MAINWINDOW.redraw(Window.MAINWINDOW.tiles)
+
+
+def changeLayout():
+  if Window.MAINWINDOW.nextLevel <= Window.MAINWINDOW.maxLevel: #THIS IS THE MAX NUMBER OF LEVELS IN LAYOUTS, DO NOT FORGET TO CHANGE THIS WHENEVER ADDING A LEVEL
+    Window.MAINWINDOW.nextLevel += 1
+  else:
+    Window.MAINWINDOW.nextLevel = 1
+
+  newLayout = getLayout(Window.MAINWINDOW.nextLevel)
+
+  if newLayout != None:
+    Window.MAINWINDOW.loadMap(newLayout)
+  else:
+    print("Layout Not Found")
+  
+
+#========================================================================================================
+
+"""
+class mainThread(threading.Thread):
+
+  #RUNNING = False
+
+  #REDRAW = False
+
+  algorithm = "test"
+
+  analytics = Analyze()
+  
+
+  field = None 
+  #startingTile = None
+  #goalTile = None
+
+
+  def passField(self, tiles):
+    self.field = tiles
+
+
+
+  def find_tile(self, posX, posY):
+
+    findArray = self.field[posY] 
+    tile = findArray[posX]
+    return tile
+
+
+  def run(self):
+    algorithm = Window.MAINWINDOW.algorithm
+
+    match self.algorithm:
+      case "test": self.testAlgorithm()
+      case "A*": self.astarAlgorithm()
+
+      case _: print("Algorithm Not Found")
+
+    
+    
+    #mainThread.RUNNING = True
+
+    # while (mainThread.RUNNING):
+    #   if (Window.RUN_TEST_ALG == 1):
+    #     #print("DID IT")
+    #     self.testAlgorithm()
+    #     Window.RUN_TEST_ALG = 0
+
+    #   if (Window.RUN_A_STAR == 1):
+    #     #print("DID IT")
+    #     self.astarAlgorithm()
+    #     Window.RUN_A_STAR = 0 
+
+
+  def testAlgorithm(self):
+    self.analytics.startTime()
+    # Window.MAINWINDOW.set_output("Running test algorithm")
+
+    tiles = self.field
+    #print(tiles)
+    startPosX, startPosY = Window.MAINWINDOW.startingTile.get_pos()
+
+    foundGoal = False
+    newposX = startPosX
+    newposY = startPosY
+
+    while (not foundGoal):
+      newposX = newposX + 1
+
+      #currentArray = tiles[newposY]
+      currentTile = tiles[newposY][newposX]#currentArray[newposX]
+      currentTile.selected = True
+
+      if(currentTile.tileType == 2):
+        foundGoal = True
+    
+    self.analytics.endTime()
+    Window.MAINWINDOW.set_output("Test algorithm has found goal")
+
+    Window.MAINWINDOW.redraw(tiles)
+    Window.MAINWINDOW.update_time(self.analytics.getSecs())
+    print(self.analytics.getSecs())
+
+
+    #Window.RUNNING = 0
+
+  def astarAlgorithm(self):
+
+    self.analytics.startTime()
+    # Window.MAINWINDOW.set_output("Running test algorithm")
+
+    tiles = self.field
+    #print(tiles)
+    startPosX, startPosY = self.startingTile.get_pos()
+
+    foundGoal = False
+    newposX = startPosX
+    newposY = startPosY
+
+    while (not foundGoal):
+      newposX = newposX + 1
+
+      #currentArray = tiles[newposY]
+      currentTile = tiles[newposY][newposX]#currentArray[newposX]
+      currentTile.selected = True
+
+      if(currentTile.tileType == 2):
+        foundGoal = True
+    
+    self.analytics.endTime()
+    Window.MAINWINDOW.set_output("A* has found goal")
+    Window.MAINWINDOW.redraw(tiles)
+    Window.MAINWINDOW.update_time(self.analytics.getSecs())
+#    Window.RUNNING = 0 
+    
+"""

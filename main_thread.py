@@ -1,4 +1,5 @@
 
+
 import threading
 from tracemalloc import start
 from app import Window
@@ -9,9 +10,11 @@ from analyze import Analyze
 
 class mainThread(threading.Thread):
 
-  RUNNING = False
+  #RUNNING = False
 
-  REDRAW = False
+  #REDRAW = False
+
+  algorithm
 
   analytics = Analyze()
   
@@ -34,19 +37,27 @@ class mainThread(threading.Thread):
 
 
   def run(self):
+    algorithm = Window.MAINWINDOW.algorthim
+    match self.algorithm:
+      case "test": self.testAlgorithm()
+      case "A*": self.astarAlgorithm()
+
+      case _: print("Algorithm Not Found")
+
     
-    mainThread.RUNNING = True
+    
+    #mainThread.RUNNING = True
 
-    while (mainThread.RUNNING):
-      if (Window.RUN_TEST_ALG == 1):
-        #print("DID IT")
-        self.testAlgorithm()
-        Window.RUN_TEST_ALG = 0
+    # while (mainThread.RUNNING):
+    #   if (Window.RUN_TEST_ALG == 1):
+    #     #print("DID IT")
+    #     self.testAlgorithm()
+    #     Window.RUN_TEST_ALG = 0
 
-      if (Window.RUN_A_STAR == 1):
-        #print("DID IT")
-        self.astarAlgorithm()
-        Window.RUN_A_STAR = 0 
+    #   if (Window.RUN_A_STAR == 1):
+    #     #print("DID IT")
+    #     self.astarAlgorithm()
+    #     Window.RUN_A_STAR = 0 
 
 
   def testAlgorithm(self):
@@ -76,7 +87,9 @@ class mainThread(threading.Thread):
 
     Window.MAINWINDOW.redraw(tiles)
     Window.MAINWINDOW.update_time(self.analytics.getSecs())
-    Window.RUNNING = 0
+
+
+    #Window.RUNNING = 0
 
   def astarAlgorithm(self):
 
@@ -105,5 +118,5 @@ class mainThread(threading.Thread):
     Window.MAINWINDOW.set_output("A* has found goal")
     Window.MAINWINDOW.redraw(tiles)
     Window.MAINWINDOW.update_time(self.analytics.getSecs())
-    Window.RUNNING = 0 
+#    Window.RUNNING = 0 
     

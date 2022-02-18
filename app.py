@@ -14,10 +14,12 @@ from layouts import *
 
 #from main_thread import mainThread
 
-
+LEVEL_SIZE = 20
 class Window(tk.Frame):
 
   MAINWINDOW = None
+
+  GOALTILE = None #Tired of pythons crap
 
   #RUNNING = 0
   #RUN_TEST_ALG = 0
@@ -105,14 +107,17 @@ class Window(tk.Frame):
     astarButton = tk.Button(self.controlFrame, text="A*", command=astarAlgorithm)
     astarButton.pack(side = tk.RIGHT)
 
+    dijkstraButton = tk.Button(self.controlFrame, text="Dijkstra", command=dijkstraAlgorithm)
+    dijkstraButton.pack(side = tk.RIGHT)
+
     resetButton = tk.Button(self.controlFrame, text="RESET", command=reset)
     resetButton.pack(side = tk.LEFT)
 
-    startButton = tk.Button(self.controlFrame, text="START", command=startProcess)
-    startButton.pack()
+    # startButton = tk.Button(self.controlFrame, text="START", command=startProcess)
+    # startButton.pack()
 
-    endButton = tk.Button(self.controlFrame, text="END", command=endProcess)
-    endButton.pack()
+    # endButton = tk.Button(self.controlFrame, text="END", command=endProcess)
+    # endButton.pack()
 
     changeLevelButton = tk.Button(self.controlFrame, text="CHANGE LEVEL", command=changeLayout)
     changeLevelButton.pack()
@@ -195,12 +200,12 @@ def testButtonPress():
   print("Test")
 
 
-def startProcess():
-  print("Starting process")
+# def startProcess():
+#   print("Starting process")
 
 
-def endProcess():
-  print("End process")
+# def endProcess():
+#   print("End process")
 
 
 def testAlgorithm():
@@ -226,11 +231,22 @@ def astarAlgorithm():
   #   Window.RUN_A_STAR = 1
   #   Window.RUNNING = 1
 
+def dijkstraAlgorithm():
+  newThread = mainThread()
+
+  Window.MAINWINDOW.algorithm = algorithm = "Dijk"
+  newThread.passField(Window.MAINWINDOW.tiles)
+
+  newThread.start()
+  
+
 def reset():
   #print("Resetting")
 
   for l in Window.MAINWINDOW.tiles:
     for t in l:
+      t.dijk_value = 99999
+      astar_value = 0
       t.inspected = False
       t.selected = False
   Window.MAINWINDOW.set_output("-")
@@ -239,6 +255,9 @@ def reset():
 
 
 def changeLayout():
+
+  reset()
+
   if Window.MAINWINDOW.nextLevel < Window.MAINWINDOW.maxLevel: #THIS IS THE MAX NUMBER OF LEVELS IN LAYOUTS, DO NOT FORGET TO CHANGE THIS WHENEVER ADDING A LEVEL
     Window.MAINWINDOW.nextLevel += 1
   else:
@@ -291,6 +310,7 @@ class mainThread(threading.Thread):
     match self.algorithm:
       case "test": self.testAlgorithm()
       case "A*": self.astarAlgorithm()
+      case "Dijk": self.dijkstraAlgorithm()
 
       case _: print("Algorithm Not Found")
 
@@ -330,19 +350,217 @@ class mainThread(threading.Thread):
 
       #currentArray = tiles[newposY]
       currentTile = tiles[newposY][newposX]#currentArray[newposX]
-      currentTile.selected = True
 
-      if(currentTile.tileType == 2):
-        foundGoal = True
+      if currentTile.tileType != 1:
+        currentTile.selected = True
+
+        if(currentTile.tileType == 2):
+          foundGoal = True
+      else:
+        break
     
     self.analytics.endTime()
-    Window.MAINWINDOW.set_output("Test algorithm has found goal")
+
+    if foundGoal:
+      Window.MAINWINDOW.set_output("Test algorithm has found goal")
+    else:
+      Window.MAINWINDOW.set_output("Test did not find goal")
     Window.MAINWINDOW.redraw(tiles)
     Window.MAINWINDOW.update_time(self.analytics.getSecs())
     #print(self.analytics.getSecs())
 
 
     #Window.RUNNING = 0
+
+  def dijkstraAlgorithm(self):
+    print("RUNNING DIJKSTRA's ALGORITHM")
+
+    self.analytics.startTime()
+
+    tiles = self.field
+
+
+    startPosX, startPosY = Window.MAINWINDOW.startingTile.get_pos()
+
+    Window.MAINWINDOW.startingTile.dijk_value = -1
+
+    foundGoal = False
+    newposX = startPosX
+    newposY = startPosY
+
+    checkNeighborTiles = []
+    upcomingTiles = []
+    checkedTiles = []
+    distanceFromStart = 1
+
+    Window.GOALTILE = None
+
+    #Checking tile local functions
+    def checkNeighbors(tileE):
+      global foundGoal
+      global goalTile
+
+      posX, posY = tileE.get_pos()
+
+      if posY-1 >= 0:
+        tileNorth = tiles[posY-1][posX]
+
+        if ((tileNorth.inspected == False) and (tileNorth.tileType != 1)):
+          foundGoal = checkTile(tileNorth)
+
+          # if foundGoal:
+          #   goalTile = tileNorth
+
+      if posY+1 < LEVEL_SIZE:   #LEVEL SIZE
+        tileSouth = tiles[posY+1][posX]
+
+        if ((tileSouth.inspected == False) and (tileSouth.tileType != 1)):
+          foundGoal = checkTile(tileSouth)
+
+        # if foundGoal:
+        #     goalTile = tileSouth
+
+      if posX-1 >= 0:
+        tileWest = tiles[posY][posX-1]
+
+        if ((tileWest.inspected == False) and (tileWest.tileType != 1)):
+          foundGoal = checkTile(tileWest)
+
+          # if foundGoal:
+          #   goalTile = tileWest
+
+      if posX+1 < LEVEL_SIZE: #LEVEL SIZE
+        tileEast = tiles[posY][posX+1]
+
+        if ((tileEast.inspected == False) and (tileEast.tileType != 1)):
+          foundGoal = checkTile(tileEast)
+
+          # if foundGoal:
+          #   goalTile = tileEast
+
+      return foundGoal
+
+
+
+    def checkTile(tileC):
+      global goalTile
+
+      checkedTiles.append(tileC)
+      upcomingTiles.append(tileC)
+
+      tileC.inspected = True
+
+      #print(tileC)
+
+      tileC.dijk_value = distanceFromStart
+
+      #print(tileC.dijk_value)
+
+      if tileC.tileType == 2:
+        global goalTile
+
+        print("FOUND GOAL")
+        Window.GOALTILE = tileC
+        #print(Window.GOALTILE)
+        return True
+      else:
+        return False
+
+
+    checkNeighbors(tiles[newposY][newposX])
+
+    checkNeighborTiles.clear()
+    checkNeighborTiles = upcomingTiles[:]
+    upcomingTiles.clear()
+
+
+    #MAIN LOOP
+    while (foundGoal == False):
+
+      distanceFromStart = distanceFromStart + 1
+
+      if len(checkNeighborTiles) == 0: #No elements, prevents infinite loops
+        break
+
+
+      for tileT in checkNeighborTiles:
+        #print(tileT)
+        #print(len(checkNeighborTiles))
+        foundGoal = checkNeighbors(tileT)
+
+
+        #checkNeighborTiles.remove(tileT)
+    
+      checkNeighborTiles.clear()
+      checkNeighborTiles = upcomingTiles[:]
+      upcomingTiles.clear()
+  
+      if distanceFromStart > 100:
+        break
+        
+      #print(distanceFromStart)
+
+    def getSmallestNeighbor(tileN):
+      posX, posY = tileN.get_pos()
+
+      neighbors = []
+
+      if posY-1 >= 0:
+        tileNorth = tiles[posY-1][posX]
+        neighbors.append(tileNorth)
+
+      if posY+1 < LEVEL_SIZE:   #LEVEL SIZE
+        tileSouth = tiles[posY+1][posX]
+        neighbors.append(tileSouth)
+
+      if posX-1 >= 0:
+        tileWest = tiles[posY][posX-1]
+        neighbors.append(tileWest)
+
+      if posX+1 < LEVEL_SIZE: #LEVEL SIZE
+        tileEast = tiles[posY][posX+1]
+        neighbors.append(tileEast)
+
+      if len(neighbors) > 0:
+        smallestTile = neighbors[0]
+        for tileX in neighbors:
+          if tileX.dijk_value < smallestTile.dijk_value:
+            smallestTile = tileX
+        return smallestTile
+      else:
+        return None
+
+
+
+    
+    nextTile = Window.GOALTILE
+    #print(nextTile)
+
+    if Window.GOALTILE != None:
+      for i in range(1, distanceFromStart):
+        
+        nextTile = getSmallestNeighbor(nextTile)
+        nextTile.selected = True
+
+
+
+    #CLEANUP could be in own method
+    self.analytics.endTime()
+    Window.MAINWINDOW.set_output("Dijkstra has found goal")
+
+    Window.MAINWINDOW.redraw(tiles)
+
+    print(self.analytics.getSecs())
+    Window.MAINWINDOW.update_time(self.analytics.getSecs())
+    
+
+
+
+
+
+
+
+
 
   def astarAlgorithm(self):
     print("RUNNING A* ALGORITHM")

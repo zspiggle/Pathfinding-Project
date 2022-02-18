@@ -12,7 +12,10 @@ class Tile:
   selected = False
   inspected = False
 
+  dijk_value = 99999
+
   astar_value = 0
+
 
   """
   Types:
@@ -23,23 +26,22 @@ class Tile:
   """
 
   def get_color(self):
-    if self.tileType == 2 or self.tileType == 3:
-      match self.tileType:
-        case 2:
-          return "#399E5A"
-        case 3:
-          return "#26532B"
+    match self.tileType:
+      case 1:
+        return "#345995"
+      case 2:
+        return "#399E5A"
+      case 3:
+        return "#26532B"
+
+    if self.selected:
+      return "#82204A"
+    elif self.inspected:
+      return "#F0E100"
     else:
-      if self.selected:
-        return "#82204A"
-      elif self.inspected:
-        return "#F0E100"
-      else:
-        match self.tileType:
-          case 0:
-            return "#A8E0FF"
-          case 1:
-            return "#345995"
+      return "#A8E0FF"
+
+            
 
   def set_type(self, t=0):
     self.tileType = t

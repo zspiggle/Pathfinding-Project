@@ -9,7 +9,7 @@ class Analyze():
 
   def startTime(self):
     self.startTimeVal = time_ns()#time()#time_ns()
-    print(self.startTimeVal)
+    #print(self.startTimeVal)
 
 
   def endTime(self):

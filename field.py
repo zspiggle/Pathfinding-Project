@@ -14,8 +14,8 @@ class Tile:
 
   dijk_value = 99999
 
-  astar_value = 0
-
+  astar_G_value = 99999
+  astar_H_value = 99999
 
   """
   Types:
@@ -48,6 +48,9 @@ class Tile:
 
   def get_pos(self):
     return self.positionX, self.positionY
+
+  def get_star_value(self):
+    return self.astar_G_value + self.astar_H_value
 
 
   def __init__(self, posX=0, posY=0, type=0):

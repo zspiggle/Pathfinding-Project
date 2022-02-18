@@ -14,11 +14,19 @@ from layouts import *
 
 #from main_thread import mainThread
 
-LEVEL_SIZE = 20
+
+
+class Globals:
+  LEVEL_SIZE = 20
+
+  #Used by A*
+  NEXT_INSPECT = None
+  INCREMENT = 0.00001
+
 class Window(tk.Frame):
 
   MAINWINDOW = None
-
+  DEBUG = True
   GOALTILE = None #Tired of pythons crap
 
   #RUNNING = 0
@@ -26,6 +34,8 @@ class Window(tk.Frame):
   #RUN_A_STAR = 0
 
   canvas = 0
+
+  
 
   tile_size = 35
 
@@ -113,6 +123,9 @@ class Window(tk.Frame):
     resetButton = tk.Button(self.controlFrame, text="RESET", command=reset)
     resetButton.pack(side = tk.LEFT)
 
+    debugButton = tk.Button(self.controlFrame, text="DEBUG", command=debug)
+    debugButton.pack(side = tk.LEFT)
+
     # startButton = tk.Button(self.controlFrame, text="START", command=startProcess)
     # startButton.pack()
 
@@ -166,6 +179,11 @@ class Window(tk.Frame):
     xPos = tile.positionX * self.tile_size
     yPos = tile.positionY * self.tile_size
     self.canvas.create_rectangle(xPos, yPos, xPos+self.tile_size, yPos+self.tile_size, outline="#000", fill=tile.get_color())
+    if (Window.DEBUG == True):
+      if Window.MAINWINDOW.algorithm == "Dijk":
+        self.canvas.create_text(xPos + math.floor(self.tile_size/2), yPos + math.floor(self.tile_size/2), text=str(round(tile.dijk_value, 3)))
+      else:
+        self.canvas.create_text(xPos + math.floor(self.tile_size/2), yPos + math.floor(self.tile_size/2), text=str(round(tile.get_star_value(), 3)))
 
 
 
@@ -180,8 +198,12 @@ class Window(tk.Frame):
 
         if (t.tileType == 2):
           self.goalTile = t
+          t.selected = True
+          t.inspected = True
         elif (t.tileType == 3):
           self.startingTile = t
+          t.selected = True
+          t.inspected = True
 
         self.draw_tile(t)
         counter += 1
@@ -246,7 +268,8 @@ def reset():
   for l in Window.MAINWINDOW.tiles:
     for t in l:
       t.dijk_value = 99999
-      astar_value = 0
+      t.astar_G_value = 99999
+      t.astar_H_value = 99999
       t.inspected = False
       t.selected = False
   Window.MAINWINDOW.set_output("-")
@@ -270,6 +293,13 @@ def changeLayout():
   else:
     print("Layout Not Found")
   
+def debug():
+  if (Window.DEBUG == True):
+    Window.DEBUG = False
+  else:
+    Window.DEBUG = True
+
+
 
 #========================================================================================================
 
@@ -411,7 +441,7 @@ class mainThread(threading.Thread):
           # if foundGoal:
           #   goalTile = tileNorth
 
-      if posY+1 < LEVEL_SIZE:   #LEVEL SIZE
+      if posY+1 < Globals.LEVEL_SIZE:   #LEVEL SIZE
         tileSouth = tiles[posY+1][posX]
 
         if ((tileSouth.inspected == False) and (tileSouth.tileType != 1)):
@@ -429,7 +459,7 @@ class mainThread(threading.Thread):
           # if foundGoal:
           #   goalTile = tileWest
 
-      if posX+1 < LEVEL_SIZE: #LEVEL SIZE
+      if posX+1 < Globals.LEVEL_SIZE: #LEVEL SIZE
         tileEast = tiles[posY][posX+1]
 
         if ((tileEast.inspected == False) and (tileEast.tileType != 1)):
@@ -443,7 +473,6 @@ class mainThread(threading.Thread):
 
 
     def checkTile(tileC):
-      global goalTile
 
       checkedTiles.append(tileC)
       upcomingTiles.append(tileC)
@@ -457,7 +486,6 @@ class mainThread(threading.Thread):
       #print(tileC.dijk_value)
 
       if tileC.tileType == 2:
-        global goalTile
 
         print("FOUND GOAL")
         Window.GOALTILE = tileC
@@ -509,7 +537,7 @@ class mainThread(threading.Thread):
         tileNorth = tiles[posY-1][posX]
         neighbors.append(tileNorth)
 
-      if posY+1 < LEVEL_SIZE:   #LEVEL SIZE
+      if posY+1 < Globals.LEVEL_SIZE:   #LEVEL SIZE
         tileSouth = tiles[posY+1][posX]
         neighbors.append(tileSouth)
 
@@ -517,7 +545,7 @@ class mainThread(threading.Thread):
         tileWest = tiles[posY][posX-1]
         neighbors.append(tileWest)
 
-      if posX+1 < LEVEL_SIZE: #LEVEL SIZE
+      if posX+1 < Globals.LEVEL_SIZE: #LEVEL SIZE
         tileEast = tiles[posY][posX+1]
         neighbors.append(tileEast)
 
@@ -546,7 +574,10 @@ class mainThread(threading.Thread):
 
     #CLEANUP could be in own method
     self.analytics.endTime()
-    Window.MAINWINDOW.set_output("Dijkstra has found goal")
+    if foundGoal:
+      Window.MAINWINDOW.set_output("Dijkstra has found goal")
+    else:
+      Window.MAINWINDOW.set_output("Dijkstra did not find the goal")
 
     Window.MAINWINDOW.redraw(tiles)
 
@@ -558,39 +589,272 @@ class mainThread(threading.Thread):
 
 
 
-
-
-
-
   def astarAlgorithm(self):
     print("RUNNING A* ALGORITHM")
+
     self.analytics.startTime()
-    # Window.MAINWINDOW.set_output("Running test algorithm")
 
     tiles = self.field
-    #print(tiles)
-    startPosX, startPosY = self.startingTile.get_pos()
+
+
+    startPosX, startPosY = Window.MAINWINDOW.startingTile.get_pos()
+
+    Window.MAINWINDOW.startingTile.astar_G_value = -1
+    Window.MAINWINDOW.startingTile.astar_H_value = -1
 
     foundGoal = False
     newposX = startPosX
     newposY = startPosY
 
-    while (not foundGoal):
-      newposX = newposX + 1
+    Globals.INCREMENT = 0.0
+
+    checkNeighborTiles = []
+
+    nextOptions = []
+    optionsTiles = []
+
+    distanceFromStart = 1
+
+    #Window.GOALTILE = None
+
+
+
+    #Checking tile local functions
+    def checkNeighbors(tileE):
+      global foundGoal
+
+
+      posX, posY = tileE.get_pos()
+
+      if posY-1 >= 0:
+        tileNorth = tiles[posY-1][posX]
+
+        if ((tileNorth.inspected == False) and (tileNorth.tileType != 1)):
+          foundGoal = checkTile(tileNorth)
+
+          # if foundGoal:
+          #   goalTile = tileNorth
+
+      if posY+1 < Globals.LEVEL_SIZE:   #LEVEL SIZE
+        tileSouth = tiles[posY+1][posX]
+
+        if ((tileSouth.inspected == False) and (tileSouth.tileType != 1)):
+          foundGoal = checkTile(tileSouth)
+
+        # if foundGoal:
+        #     goalTile = tileSouth
+
+      if posX-1 >= 0:
+        tileWest = tiles[posY][posX-1]
+
+        if ((tileWest.inspected == False) and (tileWest.tileType != 1)):
+          foundGoal = checkTile(tileWest)
+
+          # if foundGoal:
+          #   goalTile = tileWest
+
+      if posX+1 < Globals.LEVEL_SIZE: #LEVEL SIZE
+        tileEast = tiles[posY][posX+1]
+
+        if ((tileEast.inspected == False) and (tileEast.tileType != 1)):
+          foundGoal = checkTile(tileEast)
+
+          # if foundGoal:
+          #   goalTile = tileEast
+
+      return foundGoal
+
+
+
+    def checkTile(tileC):
+      #global goalTile
+
+      #checkedTiles.append(tileC)
+      nextOptions.append(tileC)
+
+      tileC.inspected = True
+
+      #print(tileC)
 
       
 
+      #heuristic function:
+      goalX, goalY = Window.MAINWINDOW.goalTile.get_pos() #gets raw position
+      tilePosX, tilePosY = tileC.get_pos() #gets current tile pos
 
-      #currentArray = tiles[newposY]
-      currentTile = tiles[newposY][newposX]#currentArray[newposX]
-      currentTile.selected = True
+      #goalWeight = 2
+      #startWeight = 0.5
 
-      if(currentTile.tileType == 2):
-        foundGoal = True
-    
-    self.analytics.endTime()
-    Window.MAINWINDOW.set_output("A* has found goal")
+      
+
+      tileC.astar_H_value = math.floor(((goalX - tilePosX)**2 + (goalY - tilePosY)**2)**(1/2)) / 1.001# + Globals.INCREMENT #Distance Formula
+
+      tileC.astar_G_value = math.floor( (((tilePosX - startPosX)**2)**(1/2)) +  (((tilePosY - startPosY)**2)**(1/2))) + (distanceFromStart / 1000)  #+ Globals.INCREMENT #Raw distance from start
+
+      #Globals.INCREMENT += 0.00001
+
+      #print(tileC.dijk_value)
+
+      if tileC.tileType == 2:
+        global goalTile
+
+        print("FOUND GOAL")
+        Window.GOALTILE = tileC
+        #print(Window.GOALTILE)
+        return True
+      else:
+        return False
+
+
+    checkNeighbors(tiles[newposY][newposX])
+    for tileQ in nextOptions:
+      optionsTiles.append(tileQ)
+    nextOptions.clear()
+
+
+    #set next inspect
+    if len(optionsTiles) > 0:
+        Globals.NEXT_INSPECT = optionsTiles[0]
+        for i in range(0, len(optionsTiles)):
+
+          #print(optionsTiles[i].get_star_value())
+          if optionsTiles[i].get_star_value() < Globals.NEXT_INSPECT.get_star_value():
+            Globals.NEXT_INSPECT = optionsTiles[i]
+
+          #print(optionsTiles[i].inspected)
+          #print("STUCK 2")
+          print(Globals.NEXT_INSPECT)
+        print("last")
+        print(Globals.NEXT_INSPECT)
+
+
+
+    #MAIN LOOP
+    while (foundGoal == False):
+
+      foundGoal = checkNeighbors(Globals.NEXT_INSPECT)
+      optionsTiles.remove(Globals.NEXT_INSPECT)
+      print(len(nextOptions))
+      
+      if len(nextOptions) > 0:
+        for tileQ in nextOptions:
+          #if (tileQ.inspected == False):
+          optionsTiles.append(tileQ)
+            #Globals.NEXT_INSPECT  = None
+          print(tileQ.get_pos())
+          #print("STUCK 4")
+        nextOptions.clear()
+
+      print(len(optionsTiles))
+
+      #print("NOT STUCK")
+
+      #print("STUCK 1")
+
+      if len(optionsTiles) > 0:
+        Globals.NEXT_INSPECT = optionsTiles[0]
+        for i in range(0, len(optionsTiles)):
+
+          #print(optionsTiles[i].get_star_value())
+          if optionsTiles[i].get_star_value() < Globals.NEXT_INSPECT.get_star_value():
+            Globals.NEXT_INSPECT = optionsTiles[i]
+
+          #print(optionsTiles[i].inspected)
+          #print("STUCK 2")
+          print(Globals.NEXT_INSPECT)
+        print("last")
+        print(Globals.NEXT_INSPECT)
+        #print(nextInspect.get_star_value())
+
+        
+
+      else:
+        print("Breaking")
+        break
+
+      
+
+      print(Globals.NEXT_INSPECT)
+
+      
+      distanceFromStart += 1
+      #if len(optionsTiles) > 5:
+      #  break
+
+
     Window.MAINWINDOW.redraw(tiles)
+
+
+
+    def getSmallestNeighbor(tileN):
+      posX, posY = tileN.get_pos()
+
+      neighbors = []
+
+      if posY-1 >= 0:
+        tileNorth = tiles[posY-1][posX]
+        neighbors.append(tileNorth)
+
+      if posY+1 < Globals.LEVEL_SIZE:   #LEVEL SIZE
+        tileSouth = tiles[posY+1][posX]
+        neighbors.append(tileSouth)
+
+      if posX-1 >= 0:
+        tileWest = tiles[posY][posX-1]
+        neighbors.append(tileWest)
+
+      if posX+1 < Globals.LEVEL_SIZE: #LEVEL SIZE
+        tileEast = tiles[posY][posX+1]
+        neighbors.append(tileEast)
+
+      if len(neighbors) > 0:
+        smallestTile = neighbors[0]
+        for tileX in neighbors:
+          if tileX.tileType == 3:
+            return tileX
+
+          if ((tileX.get_star_value() < smallestTile.get_star_value()) and (tileX.selected == False)):
+            smallestTile = tileX
+        #smallestTile.selected = True
+        return smallestTile
+      else:
+        return None
+
+
+
+    
+    nextTile = Window.GOALTILE
+    #print(nextTile)
+
+    if foundGoal:
+      #Starting values
+      #sPosX, sPosY = Window.MAINWINDOW.startingTile.get_pos()
+      #gPosX, gPosY = Window.GOALTILE.get_pos()
+      #tilesNeeded = math.floor(((gPosX - sPosX)**2)**(1/2)) +  (((gPosY - sPosY)**2)**(1/2))
+
+      reachedStart = False
+      while (not reachedStart):
+        print(nextTile.get_pos())
+        nextTile = getSmallestNeighbor(nextTile)
+        if(nextTile.tileType == 3):
+          reachedStart = True
+        nextTile.selected = True
+        #Window.MAINWINDOW.redraw(tiles)
+      #for i in range(1, int(tilesNeeded)):
+        
+        
+
+
+    #CLEANUP could be in own method
+    self.analytics.endTime()
+
+    if foundGoal:
+      Window.MAINWINDOW.set_output("A* has found goal")
+    else:
+      Window.MAINWINDOW.set_output("A* did not find the goal")
+
+    Window.MAINWINDOW.redraw(tiles)
+
+    print(self.analytics.getSecs())
     Window.MAINWINDOW.update_time(self.analytics.getSecs())
-#    Window.RUNNING = 0 
     

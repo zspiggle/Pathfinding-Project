@@ -198,12 +198,12 @@ class Window(tk.Frame):
 
         if (t.tileType == 2):
           self.goalTile = t
-          t.selected = True
-          t.inspected = True
+          #t.selected = True
+          #t.inspected = True
         elif (t.tileType == 3):
           self.startingTile = t
-          t.selected = True
-          t.inspected = True
+          #t.selected = True
+          #Wt.inspected = True
 
         self.draw_tile(t)
         counter += 1
@@ -782,7 +782,7 @@ class mainThread(threading.Thread):
       #  break
 
 
-    Window.MAINWINDOW.redraw(tiles)
+    #Window.MAINWINDOW.redraw(tiles)
 
 
 

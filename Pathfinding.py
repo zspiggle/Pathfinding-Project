@@ -1,4 +1,5 @@
 #IMPORTS
+from asyncore import loop
 import math
 from pickle import GLOBAL
 import tkinter as tk
@@ -189,7 +190,7 @@ class Window(tk.Frame):
       if Globals.ALGORITHM == "Dijk":
         self.canvas.create_text(xPos + math.floor(Globals.TILE_SIZE/2), yPos + math.floor(Globals.TILE_SIZE/2), text=str(round(tile.dijk_value, 3)))
       else:
-        self.canvas.create_text(xPos + math.floor(Globals.TILE_SIZE/2), yPos + math.floor(Globals.TILE_SIZE/2), text=str(round(tile.get_star_value(), 3)))
+        self.canvas.create_text(xPos + math.floor(Globals.TILE_SIZE/2), yPos + math.floor(Globals.TILE_SIZE/2), text=str(tile.get_star_value()))
 
 
   #Loads a map with new tile states
@@ -525,274 +526,287 @@ class mainThread(threading.Thread):
 
 
   def astarAlgorithm(self):
-    print("Not implemented")
-    # print("RUNNING A* ALGORITHM")
+    #print("Not implemented")
+    print("RUNNING A* ALGORITHM")
 
-    # self.analytics.startTime()
-
-    # tiles = self.field
-
-
-    # startPosX, startPosY = Globals.STARTTILE.get_pos()
-
-    # Globals.STARTTILE.astar_G_value = -1
-    # Globals.STARTTILE.astar_H_value = -1
-
-    # foundGoal = False
-    # newposX = startPosX
-    # newposY = startPosY
-
-    # #Globals.INCREMENT = 0.0
-
-    # checkNeighborTiles = []
-
-    # nextOptions = []
-    # optionsTiles = []
-
-    # distanceFromStart = 1
-
-    # #Window.GOALTILE = None
+    self.analytics.startTime()
 
 
 
-    # #Checking tile local functions
-    # def checkNeighbors(tileE):
-    #   global foundGoal
+    startPosX, startPosY = Globals.STARTTILE.get_pos()
+
+    Globals.STARTTILE.astar_G_value = 0
+    Globals.STARTTILE.astar_H_value = -1
+
+    foundGoal = False
+    newposX = startPosX
+    newposY = startPosY
+
+    #Globals.INCREMENT = 0.0
+
+    #checkNeighborTiles = []
+
+    nextOptions = []
+    optionsTiles = []
+
+    distanceFromStart = 1
+
+    
+    loopIncrement = 0
+    
+
+    #Checking tile local functions
+    def checkNeighbors(tileE):
+      global foundGoal
 
 
-    #   posX, posY = tileE.get_pos()
+      posX, posY = tileE.get_pos()
 
-    #   if posY-1 >= 0:
-    #     tileNorth = tiles[posY-1][posX]
+      if posY-1 >= 0:
+        tileNorth = Globals.TILES[posY-1][posX]
 
-    #     if ((tileNorth.inspected == False) and (tileNorth.tileType != 1)):
-    #       foundGoal = checkTile(tileNorth)
+        if ((tileNorth.inspected == False) and (tileNorth.tileType != 1)):
+          foundGoal = checkTile(tileNorth, tileE)
 
-    #       # if foundGoal:
-    #       #   goalTile = tileNorth
+          # if foundGoal:
+          #   goalTile = tileNorth
 
-    #   if posY+1 < Globals.GRID_SIZE:   #LEVEL SIZE
-    #     tileSouth = tiles[posY+1][posX]
+      if posY+1 < Globals.GRID_SIZE:   #LEVEL SIZE
+        tileSouth = Globals.TILES[posY+1][posX]
 
-    #     if ((tileSouth.inspected == False) and (tileSouth.tileType != 1)):
-    #       foundGoal = checkTile(tileSouth)
+        if ((tileSouth.inspected == False) and (tileSouth.tileType != 1)):
+          foundGoal = checkTile(tileSouth, tileE)
 
-    #     # if foundGoal:
-    #     #     goalTile = tileSouth
+        # if foundGoal:
+        #     goalTile = tileSouth
 
-    #   if posX-1 >= 0:
-    #     tileWest = tiles[posY][posX-1]
+      if posX-1 >= 0:
+        tileWest = Globals.TILES[posY][posX-1]
 
-    #     if ((tileWest.inspected == False) and (tileWest.tileType != 1)):
-    #       foundGoal = checkTile(tileWest)
+        if ((tileWest.inspected == False) and (tileWest.tileType != 1)):
+          foundGoal = checkTile(tileWest, tileE)
 
-    #       # if foundGoal:
-    #       #   goalTile = tileWest
+          # if foundGoal:
+          #   goalTile = tileWest
 
-    #   if posX+1 < Globals.GRID_SIZE: #LEVEL SIZE
-    #     tileEast = tiles[posY][posX+1]
+      if posX+1 < Globals.GRID_SIZE: #LEVEL SIZE
+        tileEast = Globals.TILES[posY][posX+1]
 
-    #     if ((tileEast.inspected == False) and (tileEast.tileType != 1)):
-    #       foundGoal = checkTile(tileEast)
+        if ((tileEast.inspected == False) and (tileEast.tileType != 1)):
+          foundGoal = checkTile(tileEast, tileE)
 
-    #       # if foundGoal:
-    #       #   goalTile = tileEast
+          # if foundGoal:
+          #   goalTile = tileEast
 
-    #   return foundGoal
+      return foundGoal
 
 
 
-    # def checkTile(tileC):
-    #   #global goalTile
+    def checkTile(tileC, prev):
+      #global goalTile
 
-    #   #checkedTiles.append(tileC)
-    #   nextOptions.append(tileC)
+      #checkedTiles.append(tileC)
+      nextOptions.append(tileC)
 
-    #   tileC.inspected = True
+      tileC.inspected = True
 
-    #   #print(tileC)
-
-      
-
-    #   #heuristic function:
-    #   goalX, goalY = Window.MAINWINDOW.goalTile.get_pos() #gets raw position
-    #   tilePosX, tilePosY = tileC.get_pos() #gets current tile pos
-
-    #   #goalWeight = 2
-    #   #startWeight = 0.5
+      #print(tileC)
 
       
 
-    #   tileC.astar_H_value = math.floor(((goalX - tilePosX)**2 + (goalY - tilePosY)**2)**(1/2)) / 1.001# + Globals.INCREMENT #Distance Formula
+      #heuristic function:
+      goalX, goalY = Globals.MAINWINDOW.goalTile.get_pos() #gets raw position
+      tilePosX, tilePosY = tileC.get_pos() #gets current tile pos
 
-    #   tileC.astar_G_value = math.floor( (((tilePosX - startPosX)**2)**(1/2)) +  (((tilePosY - startPosY)**2)**(1/2))) + (distanceFromStart / 1000)  #+ Globals.INCREMENT #Raw distance from start
+      #goalWeight = 2
+      #startWeight = 0.5
 
-    #   #Globals.INCREMENT += 0.00001
-
-    #   #print(tileC.dijk_value)
-
-    #   if tileC.tileType == 2:
-    #     global goalTile
-
-    #     print("FOUND GOAL")
-    #     Window.GOALTILE = tileC
-    #     #print(Window.GOALTILE)
-    #     return True
-    #   else:
-    #     return False
-
-
-    # checkNeighbors(tiles[newposY][newposX])
-    # for tileQ in nextOptions:
-    #   optionsTiles.append(tileQ)
-    # nextOptions.clear()
-
-
-    # #set next inspect
-    # if len(optionsTiles) > 0:
-    #     Globals.NEXT_INSPECT = optionsTiles[0]
-    #     for i in range(0, len(optionsTiles)):
-
-    #       #print(optionsTiles[i].get_star_value())
-    #       if optionsTiles[i].get_star_value() < Globals.NEXT_INSPECT.get_star_value():
-    #         Globals.NEXT_INSPECT = optionsTiles[i]
-
-    #       #print(optionsTiles[i].inspected)
-    #       #print("STUCK 2")
-    #       print(Globals.NEXT_INSPECT)
-    #     print("last")
-    #     print(Globals.NEXT_INSPECT)
-
-
-
-    # #MAIN LOOP
-    # while (foundGoal == False):
-
-    #   foundGoal = checkNeighbors(Globals.NEXT_INSPECT)
-    #   optionsTiles.remove(Globals.NEXT_INSPECT)
-    #   print(len(nextOptions))
       
-    #   if len(nextOptions) > 0:
-    #     for tileQ in nextOptions:
-    #       #if (tileQ.inspected == False):
-    #       optionsTiles.append(tileQ)
-    #         #Globals.NEXT_INSPECT  = None
-    #       print(tileQ.get_pos())
-    #       #print("STUCK 4")
-    #     nextOptions.clear()
 
-    #   print(len(optionsTiles))
+      tileC.astar_H_value = (goalX - tilePosX)**2 + (goalY - tilePosY)**2
+      #math.floor(((goalX - tilePosX)**2 + (goalY - tilePosY)**2)**(1/2)) / 1.001# + Globals.INCREMENT #Distance Formula
 
-    #   #print("NOT STUCK")
+      tileC.astar_G_value = 1 + prev.astar_G_value #loopIncrement #(startPosX - tilePosX)**2 + (startPosY - tilePosY)**2
+      #math.floor( (((tilePosX - startPosX)**2)**(1/2)) +  (((tilePosY - startPosY)**2)**(1/2))) + (distanceFromStart / 1000)  #+ Globals.INCREMENT #Raw distance from start
 
-    #   #print("STUCK 1")
+      #Globals.INCREMENT += 0.00001
 
-    #   if len(optionsTiles) > 0:
-    #     Globals.NEXT_INSPECT = optionsTiles[0]
-    #     for i in range(0, len(optionsTiles)):
+      #print(tileC.dijk_value)
 
-    #       #print(optionsTiles[i].get_star_value())
-    #       if optionsTiles[i].get_star_value() < Globals.NEXT_INSPECT.get_star_value():
-    #         Globals.NEXT_INSPECT = optionsTiles[i]
+      if tileC.tileType == 2:
+        global goalTile
 
-    #       #print(optionsTiles[i].inspected)
-    #       #print("STUCK 2")
-    #       print(Globals.NEXT_INSPECT)
-    #     print("last")
-    #     print(Globals.NEXT_INSPECT)
-    #     #print(nextInspect.get_star_value())
+        print("FOUND GOAL")
+        Globals.GOALTILE = tileC
+        #print(Window.GOALTILE)
+        return True
+      else:
+        return False
+
+    #Globals.TILES[newposY][newposX].astar_G_value = 0
+    checkNeighbors(Globals.TILES[newposY][newposX])
+    for tileQ in nextOptions:
+      optionsTiles.append(tileQ)
+    nextOptions.clear()
+
+
+    #set next inspect
+    if len(optionsTiles) > 0:
+        Globals.NEXT_INSPECT = optionsTiles[0]
+        for i in range(0, len(optionsTiles)):
+
+          #print(optionsTiles[i].get_star_value())
+          if optionsTiles[i].get_star_value() < Globals.NEXT_INSPECT.get_star_value():
+            Globals.NEXT_INSPECT = optionsTiles[i]
+
+          #print(optionsTiles[i].inspected)
+          #print("STUCK 2")
+          #print(Globals.NEXT_INSPECT)
+          loopIncrement += 1
+          #print(loopIncrement)
+       
+
+        #print("last")
+        #print(Globals.NEXT_INSPECT)
+
+
+
+    #MAIN LOOP
+    while (foundGoal == False):
+
+      foundGoal = checkNeighbors(Globals.NEXT_INSPECT)
+      optionsTiles.remove(Globals.NEXT_INSPECT)
+      #print(len(nextOptions))
+      
+      if len(nextOptions) > 0:
+        for tileQ in nextOptions:
+          #if (tileQ.inspected == False):
+          optionsTiles.append(tileQ)
+            #Globals.NEXT_INSPECT  = None
+          #print(tileQ.get_pos())
+          #print("STUCK 4")
+        nextOptions.clear()
+        loopIncrement += 1
+        print(loopIncrement)
+
+      #print(len(optionsTiles))
+
+      #print("NOT STUCK")
+
+      #print("STUCK 1")
+
+      if len(optionsTiles) > 0:
+        Globals.NEXT_INSPECT = optionsTiles[0]
+        for i in range(0, len(optionsTiles)):
+
+          #print(optionsTiles[i].get_star_value())
+          if optionsTiles[i].get_star_value() < Globals.NEXT_INSPECT.get_star_value():
+            Globals.NEXT_INSPECT = optionsTiles[i]
+
+          #print(optionsTiles[i].inspected)
+          #print("STUCK 2")
+          #print(Globals.NEXT_INSPECT)
+        #print("last")
+       #print(Globals.NEXT_INSPECT)
+        #print(nextInspect.get_star_value())
 
         
 
-    #   else:
-    #     print("Breaking")
-    #     break
+      else:
+        print("Breaking")
+        break
 
       
 
-    #   print(Globals.NEXT_INSPECT)
+      #print(Globals.NEXT_INSPECT)
 
       
-    #   distanceFromStart += 1
-    #   #if len(optionsTiles) > 5:
-    #   #  break
+      #distanceFromStart += 1
+      #if len(optionsTiles) > 5:
+      #  break
 
 
-    # #Window.MAINWINDOW.redraw(tiles)
+    #Window.MAINWINDOW.redraw(tiles)
 
 
 
-    # def getSmallestNeighbor(tileN):
-    #   posX, posY = tileN.get_pos()
+    def getSmallestNeighbor(tileN):
+      posX, posY = tileN.get_pos()
 
-    #   neighbors = []
+      neighbors = []
 
-    #   if posY-1 >= 0:
-    #     tileNorth = tiles[posY-1][posX]
-    #     neighbors.append(tileNorth)
+      if posY-1 >= 0:
+        tileNorth = Globals.TILES[posY-1][posX]
+        neighbors.append(tileNorth)
 
-    #   if posY+1 < Globals.GRID_SIZE:   
-    #     tileSouth = tiles[posY+1][posX]
-    #     neighbors.append(tileSouth)
+      if posY+1 < Globals.GRID_SIZE:   
+        tileSouth = Globals.TILES[posY+1][posX]
+        neighbors.append(tileSouth)
 
-    #   if posX-1 >= 0:
-    #     tileWest = tiles[posY][posX-1]
-    #     neighbors.append(tileWest)
+      if posX-1 >= 0:
+        tileWest = Globals.TILES[posY][posX-1]
+        neighbors.append(tileWest)
 
-    #   if posX+1 < Globals.GRID_SIZE: 
-    #     tileEast = tiles[posY][posX+1]
-    #     neighbors.append(tileEast)
+      if posX+1 < Globals.GRID_SIZE: 
+        tileEast = Globals.TILES[posY][posX+1]
+        neighbors.append(tileEast)
 
-    #   if len(neighbors) > 0:
-    #     smallestTile = neighbors[0]
-    #     for tileX in neighbors:
-    #       if tileX.tileType == 3:
-    #         return tileX
+      if len(neighbors) > 0:
+        smallestTile = neighbors[0]
+        for tileX in neighbors:
+          if tileX.tileType == 2:
+            return tileX
 
-    #       if ((tileX.get_star_value() < smallestTile.get_star_value()) and (tileX.selected == False)):
-    #         smallestTile = tileX
-    #     #smallestTile.selected = True
-    #     return smallestTile
-    #   else:
-    #     return None
+          if ((tileX.selected == False) and (tileX.get_star_value() < smallestTile.get_star_value())):
+            smallestTile = tileX
+        #smallestTile.selected = True
+          else:
+            continue
+        smallestTile.selected = True
+        return smallestTile
+      else:
+        return None
 
 
 
     
-    # nextTile = Window.GOALTILE
-    # #print(nextTile)
+    nextTile = Globals.STARTTILE#Globals.GOALTILE
+    #print(nextTile)
 
-    # if foundGoal:
-    #   #Starting values
-    #   #sPosX, sPosY = Window.MAINWINDOW.startingTile.get_pos()
-    #   #gPosX, gPosY = Window.GOALTILE.get_pos()
-    #   #tilesNeeded = math.floor(((gPosX - sPosX)**2)**(1/2)) +  (((gPosY - sPosY)**2)**(1/2))
+    if foundGoal:
+      #Starting values
+      #sPosX, sPosY = Window.MAINWINDOW.startingTile.get_pos()
+      #gPosX, gPosY = Window.GOALTILE.get_pos()
+      #tilesNeeded = math.floor(((gPosX - sPosX)**2)**(1/2)) +  (((gPosY - sPosY)**2)**(1/2))
 
-    #   reachedStart = False
-    #   while (not reachedStart):
-    #     print(nextTile.get_pos())
-    #     nextTile = getSmallestNeighbor(nextTile)
-    #     if(nextTile.tileType == 3):
-    #       reachedStart = True
-    #     nextTile.selected = True
-    #     #Window.MAINWINDOW.redraw(tiles)
-    #   #for i in range(1, int(tilesNeeded)):
+      reachedStart = False
+
+      reachedEnd = False
+
+      while (not reachedEnd):
+        #print(nextTile.get_pos())
+        nextTile = getSmallestNeighbor(nextTile)
+        if(nextTile.tileType == 2):
+          reachedEnd = True
+        nextTile.selected = True
+        Globals.MAINWINDOW.redraw()
+      #for i in range(1, int(tilesNeeded)):
         
         
 
 
-    # #CLEANUP could be in own method
-    # self.analytics.endTime()
+    #CLEANUP could be in own method
+    self.analytics.endTime()
 
-    # if foundGoal:
-    #   Window.MAINWINDOW.set_output("A* has found goal")
-    # else:
-    #   Window.MAINWINDOW.set_output("A* did not find the goal")
+    if foundGoal:
+      Globals.MAINWINDOW.set_output("A* has found goal")
+    else:
+      Globals.MAINWINDOW.set_output("A* did not find the goal")
 
-    # Window.MAINWINDOW.redraw()
+    Globals.MAINWINDOW.redraw()
 
-    # print(self.analytics.getSecs())
-    # Window.MAINWINDOW.update_time(self.analytics.getSecs())
+    print(self.analytics.getSecs())
+    Globals.MAINWINDOW.update_time(self.analytics.getSecs())
     
 #========================================================================================================
 

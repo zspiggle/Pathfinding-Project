@@ -124,6 +124,9 @@ class Window(tk.Frame):
     astarButton = tk.Button(self.controlFrame, text="A*", command=astarAlgorithm)
     astarButton.pack(side = tk.RIGHT)
 
+    astarButton = tk.Button(self.controlFrame, text="A* +C", command=astar_withC_algorithm)
+    astarButton.pack(side = tk.RIGHT)
+
     dijkstraButton = tk.Button(self.controlFrame, text="Dijkstra", command=dijkstraAlgorithm)
     dijkstraButton.pack(side = tk.RIGHT)
 
@@ -242,6 +245,13 @@ def astarAlgorithm():
 
   newThread.start()
 
+def astar_withC_algorithm():
+  newThread = mainThread()
+
+  Globals.ALGORITHM = algorithm = "A*+C"
+
+  newThread.start()
+
 #Runs Dijkstras, may not be needed anymore
 def dijkstraAlgorithm():
   newThread = mainThread()
@@ -307,6 +317,7 @@ class mainThread(threading.Thread):
       case "test": self.testAlgorithm()
       case "A*": self.astarAlgorithm()
       case "Dijk": self.dijkstraAlgorithm()
+      case "A*+C": self.astar_withC_Algorithm()
 
       case _: print("Algorithm Not Found")
 
@@ -541,25 +552,6 @@ class mainThread(threading.Thread):
     #start by adding current position to closedList
     closedList.append(Globals.STARTTILE)
 
-    
-
-    def addNeighbors(tileP):  
-      if (Globals.TILES[tileP.positionY + 1][tileP.positionX] != None):
-        if(Globals.TILES[tileP.positionY + 1][tileP.positionX].tileType != 1):
-          openList.append(Globals.TILES[tileP.positionY + 1][tileP.positionX])
-
-      if (Globals.TILES[tileP.positionY - 1][tileP.positionX] != None):
-        if(Globals.TILES[tileP.positionY - 1][tileP.positionX].tileType != 1):
-          openList.append(Globals.TILES[tileP.positionY - 1][tileP.positionX])
-
-      if (Globals.TILES[tileP.positionY][tileP.positionX + 1] != None):
-        if(Globals.TILES[tileP.positionY][tileP.positionX + 1].tileType != 1):
-          openList.append(Globals.TILES[tileP.positionY][tileP.positionX + 1])
-
-      if (Globals.TILES[tileP.positionY][tileP.positionX - 1] != None):
-        if(Globals.TILES[tileP.positionY][tileP.positionX - 1].tileType != 1):
-          openList.append(Globals.TILES[tileP.positionY][tileP.positionX - 1])
-
 
     #def heuristic(a,b):
     #  return math.sqrt((b.positionX - a.positionX)**2 + (b.positionY - a.positionY)**2 ) 
@@ -571,84 +563,77 @@ class mainThread(threading.Thread):
 
     def setAValues(tileT):
       tileT.astar_G_value = (tileT.prevTile.astar_G_value + 1) 
-      tileT.astar_H_value = (distanceFormula(tileT, Globals.GOALTILE))
+      tileT.astar_H_value = (distanceFormula(tileT, Globals.GOALTILE)) * 10
+
+
+    def legalTile(someTile):
+      # if exists
+          
+      if (someTile != None):
+
+        # if not wall
+        if(someTile.tileType != 1):
+
+          # check if in closed list or open list
+          if not (someTile in closedList):
+            return True
+
+      return False
 
     def adjacentTasks(tileCenter):
       # if exists
 
       tileBelow = Globals.TILES[tileCenter.positionY + 1][tileCenter.positionX]
-      if (tileBelow != None):
-
-        # if not wall
-        if(tileBelow.tileType != 1):
-
-          # check if in closed list or open list
-          if not (tileBelow in closedList):
-            #if in open list then update
-            if (tileBelow in openList):
-              if(tileBelow.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileBelow, Globals.GOALTILE))):
-                setAValues(tileBelow)
-            else:
-              tileBelow.inspected = True
-              tileBelow.prevTile = tileCenter
-              setAValues(tileBelow)
-              openList.append(tileBelow)
+      if (legalTile(tileBelow)):
+        #if in open list then update
+        if (tileBelow in openList):
+          if(tileBelow.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileBelow, Globals.GOALTILE))):
+            setAValues(tileBelow)
+        else:
+          tileBelow.inspected = True
+          tileBelow.prevTile = tileCenter
+          setAValues(tileBelow)
+          openList.append(tileBelow)
 
 
 
       # if exists
       tileAbove = Globals.TILES[tileCenter.positionY - 1][tileCenter.positionX]
-      if (tileAbove != None):
-        # if not wall
-        if(tileAbove.tileType != 1):
-
-          # check if in closed list or open list
-          if not (tileAbove in closedList):
-            #if in open list then update
-            if (tileAbove in openList):
-              if(tileAbove.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileAbove, Globals.GOALTILE))):
-                setAValues(tileAbove)
-            else:
-              tileAbove.inspected = True
-              tileAbove.prevTile = tileCenter
-              setAValues(tileAbove)
-              openList.append(tileAbove)
+      if (legalTile(tileAbove)):
+        if (tileAbove in openList):
+          if(tileAbove.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileAbove, Globals.GOALTILE))):
+            setAValues(tileAbove)
+        else:
+          tileAbove.inspected = True
+          tileAbove.prevTile = tileCenter
+          setAValues(tileAbove)
+          openList.append(tileAbove)
       
       tileRight = Globals.TILES[tileCenter.positionY][tileCenter.positionX + 1]  
-      if (tileRight != None):
-        # if not wall
-        if(tileRight.tileType != 1):
+      if (legalTile(tileRight)):
+        #if in open list then update
+        if (tileRight in openList):
 
-          # check if in closed list or open list
-          if not (tileRight in closedList):
-            #if in open list then update
-            if (tileRight in openList):
+          if(tileRight.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileRight, Globals.GOALTILE))):
+            setAValues(tileRight)
 
-              if(tileRight.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileRight, Globals.GOALTILE))):
-                setAValues(tileRight)
-
-            else:
-              tileRight.inspected = True
-              tileRight.prevTile = tileCenter
-              setAValues(tileRight)
-              openList.append(tileRight)
+        else:
+          tileRight.inspected = True
+          tileRight.prevTile = tileCenter
+          setAValues(tileRight)
+          openList.append(tileRight)
       
       tileLeft = Globals.TILES[tileCenter.positionY][tileCenter.positionX - 1]
-      if (tileLeft != None):
-        # if not wall
-        if(tileLeft.tileType != 1):
-
-          # check if in closed list or open list
-          if not (tileLeft in closedList):
-            #if in open list then update
-            if (tileLeft in openList):
-              if(tileLeft.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileLeft, Globals.GOALTILE))):
-                setAValues(tileLeft)
-            else:
-              tileLeft.inspected = True
-              tileLeft.prevTile = tileCenter
-              setAValues(tileLeft)
-              openList.append(tileLeft)
+      if (legalTile(tileLeft)):
+        #if in open list then update
+        if (tileLeft in openList):
+          if(tileLeft.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileLeft, Globals.GOALTILE))):
+            setAValues(tileLeft)
+        else:
+          tileLeft.inspected = True
+          tileLeft.prevTile = tileCenter
+          setAValues(tileLeft)
+          openList.append(tileLeft)
       
 
 
@@ -742,6 +727,265 @@ class mainThread(threading.Thread):
     print(self.analytics.getSecs())
     Globals.MAINWINDOW.update_time(self.analytics.getSecs())
     
+
+  def astar_withC_Algorithm(self):
+    print("RUNNING A*+C ALGORITHM")
+    self.analytics.startTime()
+
+    foundGoal = False
+
+    distanceFromStart = 1
+
+    openList = []
+    closedList = []
+
+    #start by adding current position to closedList
+    closedList.append(Globals.STARTTILE)
+
+
+    #def heuristic(a,b):
+    #  return math.sqrt((b.positionX - a.positionX)**2 + (b.positionY - a.positionY)**2 ) 
+
+    #Goal , Destination 
+    def distanceFormula(tileOne, tileTwo):  
+      return abs(tileTwo.positionY - tileOne.positionY) + abs(tileTwo.positionX - tileOne.positionX)
+      #return math.sqrt((tileTwo.positionY - tileOne.positionY)**2 + (tileTwo.positionX - tileOne.positionX)**2)
+
+    def setAValues(tileT):
+      tileT.astar_G_value = (tileT.prevTile.astar_G_value + 1) 
+      tileT.astar_H_value = (distanceFormula(tileT, Globals.GOALTILE)) * 10
+
+    def setCornerAValues(tileK):
+      tileK.astar_G_value = (tileK.prevTile.astar_G_value + 1.4) 
+      tileK.astar_H_value = (distanceFormula(tileK, Globals.GOALTILE)) * 10
+
+    def legalTile(someTile):
+      # if exists
+          
+      if (someTile != None):
+
+        # if not wall
+        if(someTile.tileType != 1):
+
+          # check if in closed list or open list
+          if not (someTile in closedList):
+            return True
+
+      return False
+
+    def adjacentTasks(tileCenter):
+      # if exists
+
+      tileBelow = Globals.TILES[tileCenter.positionY + 1][tileCenter.positionX]
+      if (legalTile(tileBelow)):
+        #if in open list then update
+        if (tileBelow in openList):
+          if(tileBelow.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileBelow, Globals.GOALTILE))):
+            setAValues(tileBelow)
+        else:
+          tileBelow.inspected = True
+          tileBelow.prevTile = tileCenter
+          setAValues(tileBelow)
+          openList.append(tileBelow)
+
+
+
+      # if exists
+      tileAbove = Globals.TILES[tileCenter.positionY - 1][tileCenter.positionX]
+      if (legalTile(tileAbove)):
+        if (tileAbove in openList):
+          if(tileAbove.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileAbove, Globals.GOALTILE))):
+            setAValues(tileAbove)
+        else:
+          tileAbove.inspected = True
+          tileAbove.prevTile = tileCenter
+          setAValues(tileAbove)
+          openList.append(tileAbove)
+      
+      tileRight = Globals.TILES[tileCenter.positionY][tileCenter.positionX + 1]  
+      if (legalTile(tileRight)):
+        #if in open list then update
+        if (tileRight in openList):
+
+          if(tileRight.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileRight, Globals.GOALTILE))):
+            setAValues(tileRight)
+
+        else:
+          tileRight.inspected = True
+          tileRight.prevTile = tileCenter
+          setAValues(tileRight)
+          openList.append(tileRight)
+      
+      tileLeft = Globals.TILES[tileCenter.positionY][tileCenter.positionX - 1]
+      if (legalTile(tileLeft)):
+        #if in open list then update
+        if (tileLeft in openList):
+          if(tileLeft.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileLeft, Globals.GOALTILE))):
+            setAValues(tileLeft)
+        else:
+          tileLeft.inspected = True
+          tileLeft.prevTile = tileCenter
+          setAValues(tileLeft)
+          openList.append(tileLeft)
+      
+      tileUpLeft = Globals.TILES[tileCenter.positionY - 1][tileCenter.positionX - 1]
+      if (legalTile(tileUpLeft)):
+        #if in open list then update
+        if (tileUpLeft in openList):
+          if(tileUpLeft.F_Value() > ((tileCenter.astar_G_value + 1.4) + distanceFormula(tileUpLeft, Globals.GOALTILE))):
+            setCornerAValues(tileUpLeft)
+        else:
+          tileUpLeft.inspected = True
+          tileUpLeft.prevTile = tileCenter
+          setCornerAValues(tileUpLeft)
+          openList.append(tileUpLeft)
+
+      tileUpRight = Globals.TILES[tileCenter.positionY - 1][tileCenter.positionX + 1]
+      if (legalTile(tileUpRight)):
+        #if in open list then update
+        if (tileUpRight in openList):
+          if(tileUpRight.F_Value() > ((tileCenter.astar_G_value + 1.4) + distanceFormula(tileUpRight, Globals.GOALTILE))):
+            setCornerAValues(tileUpLeft)
+        else:
+          tileUpRight.inspected = True
+          tileUpRight.prevTile = tileCenter
+          setCornerAValues(tileUpRight)
+          openList.append(tileUpRight)
+
+      tileDownLeft = Globals.TILES[tileCenter.positionY + 1][tileCenter.positionX - 1]
+      if (legalTile(tileDownLeft)):
+        #if in open list then update
+        if (tileDownLeft in openList):
+          if(tileDownLeft.F_Value() > ((tileCenter.astar_G_value + 1.4) + distanceFormula(tileDownLeft, Globals.GOALTILE))):
+            setCornerAValues(tileDownLeft)
+        else:
+          tileDownLeft.inspected = True
+          tileDownLeft.prevTile = tileCenter
+          setCornerAValues(tileDownLeft)
+          openList.append(tileDownLeft)
+
+      tileDownRight = Globals.TILES[tileCenter.positionY + 1][tileCenter.positionX + 1]
+      if (legalTile(tileDownRight)):
+        #if in open list then update
+        if (tileDownRight in openList):
+          if(tileDownRight.F_Value() > ((tileCenter.astar_G_value + 1.4) + distanceFormula(tileDownRight, Globals.GOALTILE))):
+            setCornerAValues(tileDownRight)
+        else:
+          tileDownRight.inspected = True
+          tileDownRight.prevTile = tileCenter
+          setCornerAValues(tileDownRight)
+          openList.append(tileDownRight)
+
+
+
+    #Add starting tile
+    adjacentTasks(Globals.STARTTILE)
+
+    def getLowest(tileList):
+      lowestTile = tileList[0]
+      for tileX in tileList:
+        if (tileX.F_Value() < lowestTile.F_Value()):
+          lowestTile = tileX
+      return lowestTile
+
+    #WHILE NOT FOUNDGOAL
+    while(not foundGoal and len(openList) > 0):
+      lowestT = getLowest(openList)
+      adjacentTasks(lowestT)
+      openList.remove(lowestT)
+      closedList.append(lowestT)
+
+      if(Globals.GOALTILE in openList):
+        foundGoal = True
+      
+      #Globals.MAINWINDOW.redraw()
+
+    #get lowest F value on open list
+    #remove from open list, add to closed list
+    #for each square T in adjacent tiles:
+    #   if in closed, ignore
+    #   if in open, if F score is lower with new path, update
+    #   if not in open, add it and compute score
+    
+    #backtrack from goal with lowest F value
+
+      
+    #GO back now
+    def getSmallestAdjacent(tileN):
+      posX, posY = tileN.get_pos()
+
+      neighbors = []
+
+      if posY-1 >= 0:
+        tileNorth = Globals.TILES[posY-1][posX]
+        if tileNorth in closedList:
+          neighbors.append(tileNorth)
+
+      if posY+1 < Globals.GRID_SIZE:   
+        tileSouth = Globals.TILES[posY+1][posX]
+        if tileSouth in closedList:
+          neighbors.append(tileSouth)
+
+      if posX-1 >= 0:
+        tileWest = Globals.TILES[posY][posX-1]
+        if tileWest in closedList:
+          neighbors.append(tileWest)
+
+      if posX+1 < Globals.GRID_SIZE: #LEVEL SIZE
+        tileEast = Globals.TILES[posY][posX+1]
+        if tileEast in closedList:
+          neighbors.append(tileEast)
+
+      if ((posX+1 < Globals.GRID_SIZE) and (posY-1 < Globals.GRID_SIZE)):
+        tileNorthEast = Globals.TILES[posY-1][posX+1]
+        if tileNorthEast in closedList:
+          neighbors.append(tileNorthEast)
+
+      if ((posX-1 < Globals.GRID_SIZE) and (posY-1 < Globals.GRID_SIZE)):
+        tileNorthWest = Globals.TILES[posY-1][posX-1]
+        if tileNorthWest in closedList:
+          neighbors.append(tileNorthWest)
+
+      if ((posX+1 < Globals.GRID_SIZE) and (posY+1 < Globals.GRID_SIZE)):
+        tileSouthEast = Globals.TILES[posY+1][posX+1]
+        if tileSouthEast in closedList:
+          neighbors.append(tileSouthEast)
+
+      if ((posX-1 < Globals.GRID_SIZE) and (posY+1 < Globals.GRID_SIZE)):
+        tileSouthWest = Globals.TILES[posY+1][posX-1]
+        if tileSouthWest in closedList:
+          neighbors.append(tileSouthWest)
+
+      if len(neighbors) > 0:
+        smallestTile = neighbors[0]
+        for tileX in neighbors:
+          if tileX.astar_G_value < smallestTile.astar_G_value:
+            smallestTile = tileX
+        return smallestTile
+      else:
+        return None
+      
+
+    if foundGoal:
+      currentTile = Globals.GOALTILE
+      while (currentTile.tileType != 3):
+        print(currentTile.astar_G_value)
+        currentTile = getSmallestAdjacent(currentTile)
+        currentTile.selected = True
+
+    
+    #CLEANUP could be in own method
+    self.analytics.endTime()
+
+    if foundGoal:
+      Globals.MAINWINDOW.set_output("A* has found goal")
+    else:
+      Globals.MAINWINDOW.set_output("A* did not find the goal")
+
+    Globals.MAINWINDOW.redraw()
+
+    print(self.analytics.getSecs())
+    Globals.MAINWINDOW.update_time(self.analytics.getSecs())
 #========================================================================================================
 
 

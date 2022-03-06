@@ -1405,6 +1405,8 @@ def create_field():
       
       Globals.TILES.append(appendedArray)
 
+  
+
 
 #Does nothing currently
 def on_closing():

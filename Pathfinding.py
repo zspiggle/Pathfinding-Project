@@ -287,6 +287,7 @@ def reset():
       t.astar_H_value = 0#99999
       t.inspected = False
       t.selected = False
+      t.step = 0
   Globals.ALG_GOAL_TILE = None
   Globals.MAINWINDOW.set_output("-")
   Globals.MAINWINDOW.update_time(0)
@@ -1398,7 +1399,7 @@ def create_field():
       appendedArray = []
 
       for x in range(0, Globals.GRID_SIZE):
-        newTile = Tile(x,y,1)
+        newTile = Tile(x,y,-1)
         #draw_tile(win, newTile)
         appendedArray.append(newTile)
       

@@ -7,7 +7,9 @@ from Motor import *
 
 class GLOBALS:
 
-  SPIN_SECS = 0.57
+  SPIN_SECS = 1#0.50
+  FOWARD_SECS = 0.5
+  SPEED = 500
 
   DIRECTION = 0 #How many rotations
 
@@ -90,14 +92,51 @@ def forward(secs):
   time.sleep(secs) #HOW LONG TO GO FORWARD
   GLOBALS.PWM.setMotorModel(0,0,0,0)
 
-def rotate(secs):
-  GLOBALS.PWM.setMotorModel(1500,1500,-1500,-1500) 
+def rotateRight(secs):
+  #GLOBALS.PWM.setMotorModel(1500,1500,-1500,-1500) 
+  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
   time.sleep(secs)
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   GLOBALS.PWM.setMotorModel(0,0,0,0)
 
-def rotateTimes(dir): #number of rotations
-  rotate(dir * GLOBALS.SPIN_SECS)
+def rotateLeft(secs):
+  #GLOBALS.PWM.setMotorModel(-1500,-1500,1500,1500) 
+  GLOBALS.PWM.setMotorModel(-GLOBALS.SPEED,-GLOBALS.SPEED,GLOBALS.SPEED,GLOBALS.SPEED) 
+  time.sleep(secs)
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+
+def rotateTimes(dir, reoring=False): #number of rotations
+
+  if reoring:
+    if not (dir >= 8):
+      if dir > 4:
+        useDir = dir-8
+      else:
+        useDir = dir
+      
+      if useDir < 0:
+        rotateLeft(abs(useDir))
+      else:
+        rotateRight(useDir)
+  else:
+    if not (dir >= 8):
+      if dir > 4:
+        useDir = dir-8
+      else:
+        useDir = dir
+      
+      if useDir < 0:
+        rotateLeft(abs(useDir))
+      else:
+        rotateRight(useDir)
+
+      GLOBALS.DIRECTION = dir
+      print("Global Dire: ", GLOBALS.DIRECTION)
+
+def reorient():
+  rotateTimes(8 - GLOBALS.DIRECTION, True)
+  print("REORIENTING...")
 
 def extendField():
   if(len(GLOBALS.TILES) <= GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET + 1):
@@ -425,7 +464,7 @@ def extend_field_x_positive():
 
 
   for tileList in GLOBALS.TILES:
-    newTile = Tile(len(tileList) + GLOBALS.X_OFFSET, tileList[0].positionY,5)
+    newTile = Tile(len(tileList) - GLOBALS.X_OFFSET, tileList[0].positionY,5)
     tileList.append(newTile)
 
   # for y in range(0, len(GLOBALS.TILES)):
@@ -439,7 +478,7 @@ def extend_field_x_negative():
   #count = 0
 
   for tileList in GLOBALS.TILES:
-    newTile = Tile(GLOBALS.X_OFFSET - 1, tileList[0].positionY,5)
+    newTile = Tile(tileList[0].positionX - 1, tileList[0].positionY,5)
     tileList.insert(0, newTile)
     
 
@@ -522,6 +561,12 @@ def print_field_Y_values():
       print(str(tile.positionY), end=" ")
     print()    
 
+def print_field_X_values():
+  for tileList in GLOBALS.TILES:
+    for tile in tileList:
+      print(str(tile.positionX), end=" ")
+    print()    
+
 def print_globals():
   print("CURRENT X: ", GLOBALS.CURRENT_X)
   print("CURRENT Y: ", GLOBALS.CURRENT_Y)
@@ -536,6 +581,8 @@ def print_globals():
   print("GOAL TILE Y: ", GLOBALS.GOAL_TILE.positionY)
 
 def main():
+
+  time.sleep(3)
 
   print("RUNNING AUTONOMOUS")
 
@@ -554,49 +601,76 @@ def main():
   print("Finished Test Print")
 
 
-  scanSurrondings()
+  #scanSurrondings()
 
-  print()
-  print("After Updating:")
-  print_field()
+  #print()
+  #print("After Updating:")
+  #print_field()
 
-  adjacentTasks(GLOBALS.STARTING_TILE)
+  #adjacentTasks(GLOBALS.STARTING_TILE)
+
+  
 
   #print_globals()
+
+
+
+  #THIS WILL END UP BEING MAIN LOOP
+
+  moved = False
+  extendField()
+
+  print("After Extending print:")
+  print_field()
+  print()
+  print_field_Y_values()
+  print()
+  print_field_X_values()
+
+  while (not moved):
+    adjacentTasks(GLOBALS.STARTING_TILE)
+    lowestTile = getLowest(GLOBALS.OPEN_LIST)
+    directionNeeded = getDirection(lowestTile)
+    print("DIRE: ", directionNeeded)
+    rotateTimes(directionNeeded)
+
+    lowestTile.tileType = scanForWall()
+
+    if lowestTile.tileType == 1:
+      GLOBALS.OPEN_LIST.remove(lowestTile)
+      
+    else:
+      if (directionNeeded%2 == 0):
+        forward(GLOBALS.FOWARD_SECS - 0.15)
+      else:
+        forward(GLOBALS.FOWARD_SECS)
+      moved = True
+
+    if len(GLOBALS.OPEN_LIST) <= 0:
+      print("NO PATH FOUND")
+      break
+
+    reorient()
+
+
+    print("In loop print:")
+    print_field()
+    print()
+
+
 
   print()
   print("After Calcalutions:")
   print_field_values()
 
-  #THIS WILL END UP BEING MAIN LOOP
-  lowestTile = getLowest(GLOBALS.OPEN_LIST)
-  directionNeeded = getDirection(lowestTile)
-  print("DIRE: ", directionNeeded)
-  rotateTimes(directionNeeded)
-  if (directionNeeded%2 == 0):
-    forward(0.5)
-  else:
-    forward(0.85)
-
   GLOBALS.CURRENT_X = lowestTile.positionX
   GLOBALS.CURRENT_Y = lowestTile.positionY
 
-  scanSurrondings()
 
-  print()
-  print("After Second Scan:")
-  print_field()
-
-  directionNeeded = getDirection(lowestTile)
-  print("DIRE: ", directionNeeded)
-  rotateTimes(directionNeeded)
-  if (directionNeeded%2 == 0):
-    forward(0.5)
-  else:
-    forward(0.85)
 
 
 def destory():
+  
   GPIO.cleanup()
 
 

@@ -9,7 +9,7 @@ class GLOBALS:
 
   SPIN_SECS = 1#0.50
   FOWARD_SECS = 0.5
-  SPEED = 500
+  SPEED = 1500
 
   DIRECTION = 0 #How many rotations
 
@@ -582,7 +582,7 @@ def print_globals():
 
 def main():
 
-  time.sleep(3)
+  #time.sleep(3)
 
   print("RUNNING AUTONOMOUS")
 

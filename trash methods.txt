@@ -1,0 +1,136 @@
+def rotateRight45():
+ 
+  startingAngle = GLOBALS.ANGLE
+
+  newAngle = correctedAngle(startingAngle - 45)
+
+  while (not (GLOBALS.ANGLE >= newAngle - GLOBALS.ALLOWED_OFFSET) and not (GLOBALS.ANGLE <= newAngle + GLOBALS.ALLOWED_OFFSET)):
+    GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
+    adjustAngle()
+
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+
+def rotateLeft45():
+ 
+  startingAngle = GLOBALS.ANGLE
+
+  newAngle = correctedAngle(startingAngle + 45)
+
+  while (not (GLOBALS.ANGLE >= newAngle - GLOBALS.ALLOWED_OFFSET) and not (GLOBALS.ANGLE <= newAngle + GLOBALS.ALLOWED_OFFSET)):
+    GLOBALS.PWM.setMotorModel(-GLOBALS.SPEED,-GLOBALS.SPEED,GLOBALS.SPEED,GLOBALS.SPEED) 
+    adjustAngle()
+
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+
+
+  
+def scanSurrondings():
+
+  #information = [0, 0, 0, 0, 0, 0, 0, 0] #1 value for each of the 8 directions
+
+  waitTime = 0.25
+
+  tempTile = None
+
+  extendField()
+
+  rotate(GLOBALS.SPIN_SECS)
+
+  time.sleep(waitTime)
+
+  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET - 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET + 1]
+  #NORTH EAST
+  if (tempTile.tileType != 2 and tempTile.tileType != 3):
+    tempTile.tileType = scanForWall()
+
+
+
+  rotate(GLOBALS.SPIN_SECS)
+  time.sleep(waitTime)
+  #EAST
+  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET + 1]
+  if (tempTile.tileType != 2 and tempTile.tileType != 3):
+    tempTile.tileType = scanForWall()
+
+  rotate(GLOBALS.SPIN_SECS)
+  time.sleep(waitTime)
+  #SOUTH EAST
+  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET + 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET + 1]
+
+  if (tempTile.tileType != 2 and tempTile.tileType != 3):
+    tempTile.tileType = scanForWall()
+
+  rotate(GLOBALS.SPIN_SECS)
+  time.sleep(waitTime)
+  #SOUTH 
+  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET + 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET]
+
+  if (tempTile.tileType != 2 and tempTile.tileType != 3):
+    tempTile.tileType = scanForWall()
+
+  rotate(GLOBALS.SPIN_SECS)
+  time.sleep(waitTime)
+  #SOUTH WEST
+  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET + 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET - 1]
+
+  if (tempTile.tileType != 2 and tempTile.tileType != 3):
+    tempTile.tileType = scanForWall()
+
+  rotate(GLOBALS.SPIN_SECS)
+  time.sleep(waitTime)
+  #WEST 
+  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET - 1]
+
+  if (tempTile.tileType != 2 and tempTile.tileType != 3):
+    tempTile.tileType = scanForWall()
+
+  rotate(GLOBALS.SPIN_SECS)
+  time.sleep(waitTime)
+  #NORTH WEST 
+  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET - 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET - 1]
+
+  if (tempTile.tileType != 2 and tempTile.tileType != 3):
+    tempTile.tileType = scanForWall()
+
+  rotate(GLOBALS.SPIN_SECS)
+  time.sleep(waitTime)
+  #NORTH 
+  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET - 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET]
+
+  if (tempTile.tileType != 2 and tempTile.tileType != 3):
+    tempTile.tileType = scanForWall()
+
+
+
+
+
+    
+def rotateTimes(dir, reoring=False): #number of rotations
+
+  if reoring:
+    if not (dir >= 8):
+      if dir > 4:
+        useDir = dir-8
+      else:
+        useDir = dir
+      
+      if useDir < 0:
+        rotateLeft(abs(useDir))
+      else:
+        rotateRight(useDir)
+  else:
+    if not (dir >= 8):
+      if dir > 4:
+        useDir = dir-8
+      else:
+        useDir = dir
+      
+      if useDir < 0:
+        rotateLeft(abs(useDir))
+      else:
+        rotateRight(useDir)
+
+      GLOBALS.DIRECTION = dir
+      print("Global Dire: ", GLOBALS.DIRECTION)

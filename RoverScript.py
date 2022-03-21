@@ -1,7 +1,6 @@
+from mpu6050 import mpu6050
 import time
 import sys
-
-
 import RPi.GPIO as GPIO
 from Motor import *
 
@@ -42,6 +41,33 @@ class GLOBALS:
   OPEN_LIST = []
   CLOSED_LIST = []
 
+
+  MPU = mpu6050(0x68)
+
+  STARTTIME = time.time_ns()
+  ENDTIME = 0
+  ANGLE = 0
+  ALLOWED_OFFSET = 0.5
+
+
+#ANGLE =========
+def adjustAngle():
+  gyro_data = GLOBALS.MPU.get_gyro_data()
+  GLOBALS.ENDTIME = time.time_ns()
+  
+  GLOBALS.ANGLE += ((GLOBALS.ENDTIME - GLOBALS.STARTTIME) * 0.000000001) * gyro_data['z']
+
+  GLOBALS.STARTTIME = GLOBALS.ENDTIME
+
+  GLOBALS.ANGLE = correctedAngle(GLOBALS.ANGLE)
+
+
+def correctedAngle(angle):
+  if angle > 360:
+    return (angle - 360)
+  if angle < 0:
+    return (360 + angle)
+  return angle
 
 #SENSOR ============================
 def setupPins():
@@ -86,6 +112,7 @@ def scanForWall():
     return 0
 
 
+
 #MOTORS ===================================
 def forward(secs):
   GLOBALS.PWM.setMotorModel(1500,1500,1500,1500) 
@@ -106,37 +133,57 @@ def rotateLeft(secs):
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   GLOBALS.PWM.setMotorModel(0,0,0,0)
 
-def rotateTimes(dir, reoring=False): #number of rotations
 
-  if reoring:
-    if not (dir >= 8):
-      if dir > 4:
-        useDir = dir-8
-      else:
-        useDir = dir
-      
-      if useDir < 0:
-        rotateLeft(abs(useDir))
-      else:
-        rotateRight(useDir)
-  else:
-    if not (dir >= 8):
-      if dir > 4:
-        useDir = dir-8
-      else:
-        useDir = dir
-      
-      if useDir < 0:
-        rotateLeft(abs(useDir))
-      else:
-        rotateRight(useDir)
 
-      GLOBALS.DIRECTION = dir
-      print("Global Dire: ", GLOBALS.DIRECTION)
+def rotateRightTo(angle):
+
+  if angle < GLOBALS.ALLOWED_OFFSET:
+    return
+
+  newAngle = angle#correctedAngle(startingAngle - 45)
+
+  print("NewAngle: ", newAngle)
+  print("GlobalAngle: ", GLOBALS.ANGLE) 
+  print("Lower adjust", correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET))
+  print("Upper adjust", correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))
+
+  #while ((not(GLOBALS.ANGLE >= correctedAngle( newAngle - GLOBALS.ALLOWED_OFFSET))) and (not(GLOBALS.ANGLE <= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET)))):
+  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
+
+  while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
+    adjustAngle()
+    print(GLOBALS.ANGLE)
+
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+
+def rotateLeftTo(angle):
+  startingAngle = GLOBALS.ANGLE
+
+  newAngle = angle#correctedAngle(startingAngle - 45)
+
+  while (not (GLOBALS.ANGLE >= newAngle - GLOBALS.ALLOWED_OFFSET) and not (GLOBALS.ANGLE <= newAngle + GLOBALS.ALLOWED_OFFSET)):
+    GLOBALS.PWM.setMotorModel(-GLOBALS.SPEED,-GLOBALS.SPEED,GLOBALS.SPEED,GLOBALS.SPEED) 
+    adjustAngle()
+
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+
+
 
 def reorient():
-  rotateTimes(8 - GLOBALS.DIRECTION, True)
-  print("REORIENTING...")
+  startingAngle = GLOBALS.ANGLE
+
+  newAngle = 0#correctedAngle(startingAngle + 45)
+
+  while (not (GLOBALS.ANGLE >= newAngle - GLOBALS.ALLOWED_OFFSET) and not (GLOBALS.ANGLE <= newAngle + GLOBALS.ALLOWED_OFFSET)):
+    GLOBALS.PWM.setMotorModel(-GLOBALS.SPEED,-GLOBALS.SPEED,GLOBALS.SPEED,GLOBALS.SPEED) 
+    adjustAngle()
+
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+  #rotateTimes(8 - GLOBALS.DIRECTION, True)
+  #print("REORIENTING...")
 
 def extendField():
   if(len(GLOBALS.TILES) <= GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET + 1):
@@ -150,83 +197,25 @@ def extendField():
   if(GLOBALS.X_OFFSET * -1 > GLOBALS.CURRENT_X - 1):
     extend_field_x_negative()
 
-def scanSurrondings():
 
-  #information = [0, 0, 0, 0, 0, 0, 0, 0] #1 value for each of the 8 directions
+def direToDegree(dire):
+  if dire == 0:
+    return 0
+  elif dire == 1:
+    return 315
+  elif dire == 2:
+    return 270
+  elif dire == 3:
+    return 225
+  elif dire == 4:
+    return 180
+  elif dire == 5:
+    return 135
+  elif dire == 6:
+    return 90
+  elif dire == 7:
+    return 45
 
-  waitTime = 0.25
-
-  tempTile = None
-
-  extendField()
-
-  rotate(GLOBALS.SPIN_SECS)
-
-  time.sleep(waitTime)
-
-  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET - 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET + 1]
-  #NORTH EAST
-  if (tempTile.tileType != 2 and tempTile.tileType != 3):
-    tempTile.tileType = scanForWall()
-
-
-
-  rotate(GLOBALS.SPIN_SECS)
-  time.sleep(waitTime)
-  #EAST
-  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET + 1]
-  if (tempTile.tileType != 2 and tempTile.tileType != 3):
-    tempTile.tileType = scanForWall()
-
-  rotate(GLOBALS.SPIN_SECS)
-  time.sleep(waitTime)
-  #SOUTH EAST
-  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET + 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET + 1]
-
-  if (tempTile.tileType != 2 and tempTile.tileType != 3):
-    tempTile.tileType = scanForWall()
-
-  rotate(GLOBALS.SPIN_SECS)
-  time.sleep(waitTime)
-  #SOUTH 
-  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET + 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET]
-
-  if (tempTile.tileType != 2 and tempTile.tileType != 3):
-    tempTile.tileType = scanForWall()
-
-  rotate(GLOBALS.SPIN_SECS)
-  time.sleep(waitTime)
-  #SOUTH WEST
-  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET + 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET - 1]
-
-  if (tempTile.tileType != 2 and tempTile.tileType != 3):
-    tempTile.tileType = scanForWall()
-
-  rotate(GLOBALS.SPIN_SECS)
-  time.sleep(waitTime)
-  #WEST 
-  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET - 1]
-
-  if (tempTile.tileType != 2 and tempTile.tileType != 3):
-    tempTile.tileType = scanForWall()
-
-  rotate(GLOBALS.SPIN_SECS)
-  time.sleep(waitTime)
-  #NORTH WEST 
-  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET - 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET - 1]
-
-  if (tempTile.tileType != 2 and tempTile.tileType != 3):
-    tempTile.tileType = scanForWall()
-
-  rotate(GLOBALS.SPIN_SECS)
-  time.sleep(waitTime)
-  #NORTH 
-  tempTile = GLOBALS.TILES[GLOBALS.CURRENT_Y + GLOBALS.Y_OFFSET - 1][GLOBALS.CURRENT_X + GLOBALS.X_OFFSET]
-
-  if (tempTile.tileType != 2 and tempTile.tileType != 3):
-    tempTile.tileType = scanForWall()
-
-  
 #ALGORITHM =====================================
 def distanceFormula(tileOne, tileTwo):  
   return abs(tileTwo.positionY - tileOne.positionY) + abs(tileTwo.positionX - tileOne.positionX)
@@ -579,6 +568,8 @@ def print_globals():
   print()
   print("GOAL TILE X: ", GLOBALS.GOAL_TILE.positionX)
   print("GOAL TILE Y: ", GLOBALS.GOAL_TILE.positionY)
+  print()
+  print("ANGLE: ", GLOBALS.ANGLE)
 
 def main():
 
@@ -627,12 +618,15 @@ def main():
   print()
   print_field_X_values()
 
+  GLOBALS.STARTTIME = time.time_ns()
+
   while (not moved):
     adjacentTasks(GLOBALS.STARTING_TILE)
     lowestTile = getLowest(GLOBALS.OPEN_LIST)
     directionNeeded = getDirection(lowestTile)
     print("DIRE: ", directionNeeded)
-    rotateTimes(directionNeeded)
+    rotateRightTo(direToDegree(directionNeeded))
+    #otateTimes(directionNeeded)
 
     lowestTile.tileType = scanForWall()
 

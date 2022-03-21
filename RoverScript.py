@@ -7,7 +7,7 @@ from Motor import *
 class GLOBALS:
 
   SPIN_SECS = 1#0.50
-  FOWARD_SECS = 0.5
+  FOWARD_SECS = 1
   SPEED = 1500
 
   DIRECTION = 0 #How many rotations
@@ -152,7 +152,7 @@ def rotateRightTo(angle):
 
   while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
     adjustAngle()
-    print(GLOBALS.ANGLE)
+    #print(GLOBALS.ANGLE)
 
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   GLOBALS.PWM.setMotorModel(0,0,0,0)
@@ -627,6 +627,8 @@ def main():
     print("DIRE: ", directionNeeded)
     rotateRightTo(direToDegree(directionNeeded))
     #otateTimes(directionNeeded)
+
+    print_globals()
 
     lowestTile.tileType = scanForWall()
 

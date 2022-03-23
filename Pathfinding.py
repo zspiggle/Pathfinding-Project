@@ -41,7 +41,7 @@ class Globals:
 
   ALG_GOAL_TILE = None
   
-  MAX_LEVEL = 5
+  MAX_LEVEL = 6
   NEXT_LEVEL = 1
 
   stepPosition = 1

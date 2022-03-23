@@ -1,3 +1,4 @@
+import math
 from mpu6050 import mpu6050
 import time
 import sys
@@ -6,9 +7,7 @@ from Motor import *
 
 class GLOBALS:
 
-  SPIN_SECS = 1#0.50
-  FOWARD_SECS = 1
-  SPEED = 1500
+  SPEED = 1250
 
 
   STARTING_POINT_X = 0
@@ -32,8 +31,8 @@ class GLOBALS:
 
   STARTING_TILE = None
   GOAL_TILE = None
+  CURRENT_TILE = None
 
-  FOUND_GOAL = False
 
   STEP_POSITION = 1
 
@@ -53,6 +52,8 @@ class GLOBALS:
   MOVE_END = 0
   DISTANCE = 0
 
+  MOVE_DISTANCE = 3.75
+
   STUCK = False
   FOUND_GOAL = False
 
@@ -60,13 +61,13 @@ class GLOBALS:
 #ANGLE =========
 def adjustAngle():
   gyro_data = GLOBALS.MPU.get_gyro_data()
-  GLOBALS.MOVE_END = time.time_ns()
+  GLOBALS.ANGLE_END = time.time_ns()
   
-  GLOBALS.DISTANCE += ((GLOBALS.MOVE_END - GLOBALS.MOVE_START) * 0.000000001) * gyro_data['z']
+  GLOBALS.ANGLE += ((GLOBALS.ANGLE_END - GLOBALS.ANGLE_START) * 0.000000001) * gyro_data['z']
 
-  GLOBALS.MOVE_START = GLOBALS.MOVE_END
+  GLOBALS.ANGLE_START = GLOBALS.ANGLE_END
+  GLOBALS.ANGLE = correctedAngle(GLOBALS.ANGLE)
 
-  #GLOBALS.DISTANCE = correctedAngle(GLOBALS.DISTANCE)
 
 
 def correctedAngle(angle):
@@ -80,17 +81,17 @@ def correctedAngle(angle):
 
 def adjustPos():
   accel_data = GLOBALS.MPU.get_accel_data()
+  GLOBALS.MOVE_END = time.time_ns()
+  timeT = ((GLOBALS.MOVE_END - GLOBALS.MOVE_START) * 0.000000001)
 
+  #GLOBALS.DISTANCE += ((timeT * timeT * ((abs(accel_data['y']) + abs(accel_data['x'])) * 9.81) ) / 2)
 
-  GLOBALS.ANGLE_END = time.time_ns()
-  
-  GLOBALS.ANGLE += ((GLOBALS.ANGLE_END - GLOBALS.ANGLE_START) * 0.000000001) * accel_data['x']
+  x = ((timeT * timeT * (abs(accel_data['x']) * 9.81) ) / 2)
+  y = ((timeT * timeT * (abs(accel_data['y']) * 9.81) ) / 2)
 
-  GLOBALS.ANGLE_START = GLOBALS.ANGLE_END
+  GLOBALS.DISTANCE += math.sqrt((x*x) + (y*y)) * 100
 
-  GLOBALS.ANGLE = correctedAngle(GLOBALS.ANGLE)
-
-
+  GLOBALS.MOVE_START = GLOBALS.MOVE_END
 
 
 
@@ -118,11 +119,11 @@ def getDistance():
   GPIO.output(GLOBALS.TRIG, 0)
 
   while GPIO.input(GLOBALS.ECHO) == 0:
-          pass
+    pass
   start = time.time()
 
   while GPIO.input(GLOBALS.ECHO) == 1:
-          pass
+    pass
   stop = time.time()
 
   return ((stop - start) * 17000) #Centimeters, 170 for "meters"
@@ -136,10 +137,20 @@ def scanForWall():
     return 0
 
 #MOTORS ===================================
-def forward(secs):
-  GLOBALS.PWM.setMotorModel(1500,1500,1500,1500) 
-  time.sleep(secs) #HOW LONG TO GO FORWARD
+
+
+def forward(dist):
+  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED, GLOBALS.SPEED, GLOBALS.SPEED, GLOBALS.SPEED) 
+  GLOBALS.MOVE_START = time.time_ns()
+
+  while(GLOBALS.DISTANCE < dist):
+    #print("DISTANCE: ", GLOBALS.DISTANCE)
+    adjustPos()
+
+  #print("DONE DIS")
+
   GLOBALS.PWM.setMotorModel(0,0,0,0)
+  #GLOBALS.DISTANCE = 0 #MAY CHANGE THIS LINE
 
 def rotate(angle):
   if (0 < (GLOBALS.ANGLE - angle)):
@@ -152,8 +163,8 @@ def rotateRight(angle):
     return
   newAngle = angle
 
-  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
   GLOBALS.ANGLE_START = time.time_ns()
+  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
 
   while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
     adjustAngle()
@@ -166,8 +177,8 @@ def rotateLeft(angle):
     return
   newAngle = angle
 
-  GLOBALS.PWM.setMotorModel(-GLOBALS.SPEED,-GLOBALS.SPEED,GLOBALS.SPEED,GLOBALS.SPEED) 
   GLOBALS.ANGLE_START = time.time_ns()
+  GLOBALS.PWM.setMotorModel(-GLOBALS.SPEED,-GLOBALS.SPEED,GLOBALS.SPEED,GLOBALS.SPEED) 
 
   while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
     adjustAngle()
@@ -178,10 +189,11 @@ def rotateLeft(angle):
 
 def reorient():
   newAngle = 0
-  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
-  GLOBALS.ANGLE_START = time.time_ns()
 
-  while (not (GLOBALS.ANGLE >= newAngle - GLOBALS.ALLOWED_OFFSET) and not (GLOBALS.ANGLE <= newAngle + GLOBALS.ALLOWED_OFFSET)):
+  GLOBALS.ANGLE_START = time.time_ns()
+  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
+  
+  while (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET)):
     adjustAngle()
 
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
@@ -394,49 +406,75 @@ def runAlgorithm():
   print("After Extending print:")
   print_field(0)
   print()
-  print_field(2)
-  print()
-  print_field(3)
+  #print_field(2)
+  #print()
+  #print_field(3)
 
   GLOBALS.ANGLE_START = time.time_ns()
 
   while (not moved):
-    adjacentTasks(GLOBALS.STARTING_TILE)
+    adjacentTasks(GLOBALS.CURRENT_TILE)
     lowestTile = getLowest(GLOBALS.OPEN_LIST)
     degreeNeeded = getDegree(lowestTile)
     print("DEGREE: ", degreeNeeded)
+    print("lowest", lowestTile)
+    print("curr", GLOBALS.CURRENT_TILE)
     rotate(degreeNeeded)
     print(GLOBALS.ANGLE)
     #otateTimes(directionNeeded)
 
     print_globals()
 
-    lowestTile.tileType = scanForWall()
+    print("In loop print11:")
+    print_field(0)
+    print()
+    print_field(1)
+    print()
+
+
+    if (lowestTile.tileType != 2):
+      lowestTile.tileType = scanForWall()
+    else:
+      if scanForWall == 1:
+        print("WALL IN WAY OF GOAL")
+        break
 
     if lowestTile.tileType == 1:
       GLOBALS.OPEN_LIST.remove(lowestTile)
       
     else:
-      forward(GLOBALS.FOWARD_SECS)
-
+      forward(GLOBALS.MOVE_DISTANCE)
+      GLOBALS.DISTANCE = 0
+      GLOBALS.CURRENT_X = lowestTile.positionX
+      GLOBALS.CURRENT_Y = lowestTile.positionY
+      GLOBALS.CURRENT_TILE = lowestTile
+      GLOBALS.OPEN_LIST.remove(lowestTile)
       moved = True
 
     if len(GLOBALS.OPEN_LIST) <= 0:
       print("NO PATH FOUND")
       break
 
-    reorient()
+  reorient()
 
-    print("In loop print:")
-    print_field(0)
-    print()
+  print("In loop print:")
+  print_field(0)
+  print()
 
   print()
   print("After Calcalutions:")
   print_field(1)
 
-  GLOBALS.CURRENT_X = lowestTile.positionX
-  GLOBALS.CURRENT_Y = lowestTile.positionY
+  print(len(GLOBALS.OPEN_LIST), " OPEN")
+
+
+
+  if GLOBALS.CURRENT_TILE.tileType == 2:
+    GLOBALS.FOUND_GOAL = True
+  
+  if len(GLOBALS.OPEN_LIST) < 1:
+    GLOBALS.STUCK = True
+    print("HELP!!")
 
 
 # DEBUG ==============================================
@@ -490,9 +528,9 @@ def main():
   print_field(0)
   print("Finished Test Print")
 
-
-  #while (not GLOBALS.FOUND_GOAL) and (not GLOBALS.STUCK):
-  runAlgorithm()
+  GLOBALS.CURRENT_TILE = GLOBALS.STARTING_TILE
+  while (not GLOBALS.FOUND_GOAL) and (not GLOBALS.STUCK):
+    runAlgorithm()
   
 
 def destory():

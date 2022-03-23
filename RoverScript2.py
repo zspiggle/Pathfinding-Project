@@ -10,7 +10,6 @@ class GLOBALS:
   FOWARD_SECS = 1
   SPEED = 1500
 
-  DIRECTION = 0 #How many rotations
 
   STARTING_POINT_X = 0
   STARTING_POINT_Y = 0
@@ -47,19 +46,27 @@ class GLOBALS:
   ANGLE_START = time.time_ns()
   ANGLE_END = 0
   ANGLE = 0
+
   ALLOWED_OFFSET = 0.5
+
+  MOVE_START = time.time_ns()
+  MOVE_END = 0
+  DISTANCE = 0
+
+  STUCK = False
+  FOUND_GOAL = False
 
 
 #ANGLE =========
 def adjustAngle():
   gyro_data = GLOBALS.MPU.get_gyro_data()
-  GLOBALS.ANGLE_END = time.time_ns()
+  GLOBALS.MOVE_END = time.time_ns()
   
-  GLOBALS.ANGLE += ((GLOBALS.ANGLE_END - GLOBALS.ANGLE_START) * 0.000000001) * gyro_data['z']
+  GLOBALS.DISTANCE += ((GLOBALS.MOVE_END - GLOBALS.MOVE_START) * 0.000000001) * gyro_data['z']
 
-  GLOBALS.ANGLE_START = GLOBALS.ANGLE_END
+  GLOBALS.MOVE_START = GLOBALS.MOVE_END
 
-  GLOBALS.ANGLE = correctedAngle(GLOBALS.ANGLE)
+  #GLOBALS.DISTANCE = correctedAngle(GLOBALS.DISTANCE)
 
 
 def correctedAngle(angle):
@@ -70,6 +77,20 @@ def correctedAngle(angle):
   return angle
 
 #ACCEL =============================
+
+def adjustPos():
+  accel_data = GLOBALS.MPU.get_accel_data()
+
+
+  GLOBALS.ANGLE_END = time.time_ns()
+  
+  GLOBALS.ANGLE += ((GLOBALS.ANGLE_END - GLOBALS.ANGLE_START) * 0.000000001) * accel_data['x']
+
+  GLOBALS.ANGLE_START = GLOBALS.ANGLE_END
+
+  GLOBALS.ANGLE = correctedAngle(GLOBALS.ANGLE)
+
+
 
 
 
@@ -104,7 +125,6 @@ def getDistance():
           pass
   stop = time.time()
 
-
   return ((stop - start) * 17000) #Centimeters, 170 for "meters"
 
 def scanForWall():
@@ -115,53 +135,53 @@ def scanForWall():
   else:
     return 0
 
-
-
 #MOTORS ===================================
 def forward(secs):
   GLOBALS.PWM.setMotorModel(1500,1500,1500,1500) 
   time.sleep(secs) #HOW LONG TO GO FORWARD
   GLOBALS.PWM.setMotorModel(0,0,0,0)
 
+def rotate(angle):
+  if (0 < (GLOBALS.ANGLE - angle)):
+    rotateLeft(angle)
+  else:
+    rotateRight(angle)
 
-
-def rotateRightTo(angle):
-
+def rotateRight(angle):
   if angle < GLOBALS.ALLOWED_OFFSET:
     return
-
-  newAngle = angle#correctedAngle(startingAngle - 45)
-
-  # print("NewAngle: ", newAngle)
-  # print("GlobalAngle: ", GLOBALS.ANGLE) 
-  # print("Lower adjust", correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET))
-  # print("Upper adjust", correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))
-
+  newAngle = angle
 
   GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
-
   GLOBALS.ANGLE_START = time.time_ns()
 
   while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
     adjustAngle()
-    #print(GLOBALS.ANGLE)
 
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   GLOBALS.PWM.setMotorModel(0,0,0,0)
 
-
-
-def reorient():
-  startingAngle = GLOBALS.ANGLE
-
-  newAngle = 0#correctedAngle(startingAngle + 45)
+def rotateLeft(angle):
+  if angle < GLOBALS.ALLOWED_OFFSET:
+    return
+  newAngle = angle
 
   GLOBALS.PWM.setMotorModel(-GLOBALS.SPEED,-GLOBALS.SPEED,GLOBALS.SPEED,GLOBALS.SPEED) 
+  GLOBALS.ANGLE_START = time.time_ns()
 
+  while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
+    adjustAngle()
+
+
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+
+def reorient():
+  newAngle = 0
+  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
   GLOBALS.ANGLE_START = time.time_ns()
 
   while (not (GLOBALS.ANGLE >= newAngle - GLOBALS.ALLOWED_OFFSET) and not (GLOBALS.ANGLE <= newAngle + GLOBALS.ALLOWED_OFFSET)):
-
     adjustAngle()
 
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
@@ -182,49 +202,22 @@ def extendField():
     extend_field_x_negative()
 
 
-def direToDegree(dire):
-  if dire == 0:
-    return 0
-  elif dire == 1:
-    return 315
-  elif dire == 2:
-    return 270
-  elif dire == 3:
-    return 225
-  elif dire == 4:
-    return 180
-  elif dire == 5:
-    return 135
-  elif dire == 6:
-    return 90
-  elif dire == 7:
-    return 45
-
 #ALGORITHM =====================================
 def distanceFormula(tileOne, tileTwo):  
   return abs(tileTwo.positionY - tileOne.positionY) + abs(tileTwo.positionX - tileOne.positionX)
-  #return math.sqrt((tileTwo.positionY - tileOne.positionY)**2 + (tileTwo.positionX - tileOne.positionX)**2)
 
 def setAValues(tileT):
   tileT.astar_G_value = (tileT.prevTile.astar_G_value + 1) 
   tileT.astar_H_value = (distanceFormula(tileT, GLOBALS.GOAL_TILE)) * 10
 
-def setCornerAValues(tileK):
-  tileK.astar_G_value = (tileK.prevTile.astar_G_value + 1.4) 
-  tileK.astar_H_value = (distanceFormula(tileK, GLOBALS.GOAL_TILE)) * 10
-
 def legalTile(someTile):
   # if exists
-      
   if (someTile != None):
-
     # if not wall
     if(someTile.tileType != 1):
-
       # check if in closed list or open list
       if not (someTile in GLOBALS.CLOSED_LIST):
         return True
-
   return False
 
 def adjacentTasks(tileCenter):
@@ -232,107 +225,34 @@ def adjacentTasks(tileCenter):
   GLOBALS.STEP_POSITION += 1
   tileCenter.selected = True
 
-  # if exists
-
   tileBelow = GLOBALS.TILES[tileCenter.positionY + GLOBALS.Y_OFFSET + 1][tileCenter.positionX + GLOBALS.X_OFFSET]
   if (legalTile(tileBelow)):
-    #if in open list then update
-    if (tileBelow in GLOBALS.OPEN_LIST):
-      if(tileBelow.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileBelow, GLOBALS.GOAL_TILE))):
-        setAValues(tileBelow)
-    else:
-      tileBelow.inspected = True
-      tileBelow.prevTile = tileCenter
-      setAValues(tileBelow)
-      GLOBALS.OPEN_LIST.append(tileBelow)
-
-
+    tileTasks(tileBelow, tileCenter)
 
   # if exists
   tileAbove = GLOBALS.TILES[tileCenter.positionY + GLOBALS.Y_OFFSET - 1][tileCenter.positionX + GLOBALS.X_OFFSET]
   if (legalTile(tileAbove)):
-    if (tileAbove in GLOBALS.OPEN_LIST):
-      if(tileAbove.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileAbove, GLOBALS.GOAL_TILE))):
-        setAValues(tileAbove)
-    else:
-      tileAbove.inspected = True
-      tileAbove.prevTile = tileCenter
-      setAValues(tileAbove)
-      GLOBALS.OPEN_LIST.append(tileAbove)
+    tileTasks(tileAbove, tileCenter)
   
   tileRight = GLOBALS.TILES[tileCenter.positionY + GLOBALS.Y_OFFSET][tileCenter.positionX + GLOBALS.X_OFFSET + 1]  
   if (legalTile(tileRight)):
-    #if in open list then update
-    if (tileRight in GLOBALS.OPEN_LIST):
-
-      if(tileRight.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileRight, GLOBALS.GOAL_TILE))):
-        setAValues(tileRight)
-
-    else:
-      tileRight.inspected = True
-      tileRight.prevTile = tileCenter
-      setAValues(tileRight)
-      GLOBALS.OPEN_LIST.append(tileRight)
+    tileTasks(tileRight, tileCenter)
   
   tileLeft = GLOBALS.TILES[tileCenter.positionY + GLOBALS.Y_OFFSET][tileCenter.positionX + GLOBALS.X_OFFSET - 1]
   if (legalTile(tileLeft)):
-    #if in open list then update
-    if (tileLeft in GLOBALS.OPEN_LIST):
-      if(tileLeft.F_Value() > ((tileCenter.astar_G_value + 1) + distanceFormula(tileLeft, GLOBALS.GOAL_TILE))):
-        setAValues(tileLeft)
-    else:
-      tileLeft.inspected = True
-      tileLeft.prevTile = tileCenter
-      setAValues(tileLeft)
-      GLOBALS.OPEN_LIST.append(tileLeft)
+    tileTasks(tileLeft, tileCenter)
+
   
-  tileUpLeft = GLOBALS.TILES[tileCenter.positionY + GLOBALS.Y_OFFSET - 1][tileCenter.positionX + GLOBALS.X_OFFSET - 1]
-  if (legalTile(tileUpLeft)):
-    #if in open list then update
-    if (tileUpLeft in GLOBALS.OPEN_LIST):
-      if(tileUpLeft.F_Value() > ((tileCenter.astar_G_value + 1.4) + distanceFormula(tileUpLeft, GLOBALS.GOAL_TILE))):
-        setCornerAValues(tileUpLeft)
-    else:
-      tileUpLeft.inspected = True
-      tileUpLeft.prevTile = tileCenter
-      setCornerAValues(tileUpLeft)
-      GLOBALS.OPEN_LIST.append(tileUpLeft)
-
-  tileUpRight = GLOBALS.TILES[tileCenter.positionY + GLOBALS.Y_OFFSET - 1][tileCenter.positionX + GLOBALS.X_OFFSET + 1]
-  if (legalTile(tileUpRight)):
-    #if in open list then update
-    if (tileUpRight in GLOBALS.OPEN_LIST):
-      if(tileUpRight.F_Value() > ((tileCenter.astar_G_value + 1.4) + distanceFormula(tileUpRight, GLOBALS.GOAL_TILE))):
-        setCornerAValues(tileUpLeft)
-    else:
-      tileUpRight.inspected = True
-      tileUpRight.prevTile = tileCenter
-      setCornerAValues(tileUpRight)
-      GLOBALS.OPEN_LIST.append(tileUpRight)
-
-  tileDownLeft = GLOBALS.TILES[tileCenter.positionY + GLOBALS.Y_OFFSET + 1][tileCenter.positionX + GLOBALS.X_OFFSET - 1]
-  if (legalTile(tileDownLeft)):
-    #if in open list then update
-    if (tileDownLeft in GLOBALS.OPEN_LIST):
-      if(tileDownLeft.F_Value() > ((tileCenter.astar_G_value + 1.4) + distanceFormula(tileDownLeft, GLOBALS.GOAL_TILE))):
-        setCornerAValues(tileDownLeft)
-    else:
-      tileDownLeft.inspected = True
-      tileDownLeft.prevTile = tileCenter
-      setCornerAValues(tileDownLeft)
-      GLOBALS.OPEN_LIST.append(tileDownLeft)
-
-  tileDownRight = GLOBALS.TILES[tileCenter.positionY + GLOBALS.Y_OFFSET + 1][tileCenter.positionX + GLOBALS.X_OFFSET + 1]
-  if (legalTile(tileDownRight)):
-    #if in open list then update
-    if (tileDownRight in GLOBALS.OPEN_LIST):
-      if(tileDownRight.F_Value() > ((tileCenter.astar_G_value + 1.4) + distanceFormula(tileDownRight, GLOBALS.GOAL_TILE))):
-        setCornerAValues(tileDownRight)
-    else:
-      tileDownRight.inspected = True
-      tileDownRight.prevTile = tileCenter
-      setCornerAValues(tileDownRight)
-      GLOBALS.OPEN_LIST.append(tileDownRight)
+def tileTasks(tileQ, tileCent):
+  #if in open list then update
+  if (tileQ in GLOBALS.OPEN_LIST):
+    if(tileQ.F_Value() > ((tileCent.astar_G_value + 1) + distanceFormula(tileQ, GLOBALS.GOAL_TILE))):
+      setAValues(tileQ)
+  else:
+    tileQ.inspected = True
+    tileQ.prevTile = tileCent
+    setAValues(tileQ)
+    GLOBALS.OPEN_LIST.append(tileQ)
 
 def getLowest(tileList):
   lowestTile = tileList[0]
@@ -343,34 +263,17 @@ def getLowest(tileList):
 
 
 # ETC ALO ============
-
 class Tile:
-
   positionX = 0
   positionY = 0
   tileType = 0
-
-  #selected = False
-  #inspected = False
-
-  astar_G_value = 0#99999
-  astar_H_value = 0#99999
-
+  astar_G_value = 0
+  astar_H_value = 0
   prevTile = None
-
   step = 0
-
-  #Step for local A*
-  #step = 0
-
-            
 
   def set_type(self, t=0):
     self.tileType = t
-
-  # def get_pos(self):
-  #   return self.positionX, self.positionY
-
 
   def __str__(self):
     return str(self.tileType)
@@ -383,9 +286,7 @@ class Tile:
   def F_Value(self):
     return self.astar_G_value + self.astar_H_value
 
-
 def create_field():
-
   yList = []
   xList = []
   startingTile = Tile(0,0,3)
@@ -401,11 +302,9 @@ def create_field():
 
   #SET OFFSET BASED ON GOAL:
   if GLOBALS.GOAL_X < 0:
-    #GLOBALS.X_OFFSET = 0#GLOBALS.GOAL_X
     xNeg = True
 
   if GLOBALS.GOAL_Y < 0:
-    #GLOBALS.Y_OFFSET = 0#GLOBALS.GOAL_Y
     yNeg = True
 
   #if negative, extend reverse
@@ -432,38 +331,22 @@ def create_field():
 
 
 def extend_field_x_positive():
-
   print("Extending X Pos")
-
-
   for tileList in GLOBALS.TILES:
     newTile = Tile(len(tileList) - GLOBALS.X_OFFSET, tileList[0].positionY,5)
     tileList.append(newTile)
 
-  # for y in range(0, len(GLOBALS.TILES)):
-  #   newTile = Tile(GLOBALS.TILES[y][len(GLOBALS.TILES[y])-1].positionX + 1, GLOBALS.TILES[y][len(GLOBALS.TILES[y])-1].positionY, 5)
-  #   GLOBALS.TILES[y].append(newTile)
 
 def extend_field_x_negative():
-
   print("Extending X Neg")
-
-  #count = 0
-
   for tileList in GLOBALS.TILES:
     newTile = Tile(tileList[0].positionX - 1, tileList[0].positionY,5)
     tileList.insert(0, newTile)
     
-
-  # for y in range(0, len(GLOBALS.TILES)):
-  #   newTile = Tile(y[len(y)-1].positionX - 1, y[len(y)-1].positionY, 5)
-  #   GLOBALS.TILES[y].insert(0, newTile)
   GLOBALS.X_OFFSET += 1
 
 def extend_field_y_negative():
-
   print("Extending Y Neg")
-
   newList = []
   for x in range(len(GLOBALS.TILES[0])):
     newTile = Tile(GLOBALS.TILES[0][x].positionX, GLOBALS.TILES[0][x].positionY - 1, 5) 
@@ -473,9 +356,7 @@ def extend_field_y_negative():
   GLOBALS.Y_OFFSET += 1
 
 def extend_field_y_positive():
-
   print("Extending Y Pos")
-
   newList = []
   for x in range(len(GLOBALS.TILES[0])):
     newTile = Tile(GLOBALS.TILES[len(GLOBALS.TILES)-1][x].positionX , GLOBALS.TILES[len(GLOBALS.TILES)-1][x].positionY + 1, 5) 
@@ -483,62 +364,96 @@ def extend_field_y_positive():
   GLOBALS.TILES.append(newList)
    
 
-
 # Movement part of Alg ==============================================
-def getDirection(tileQ):
+
+def getDegree(tileQ):
   diff_X = GLOBALS.CURRENT_X - tileQ.positionX
   diff_Y = GLOBALS.CURRENT_Y - tileQ.positionY
 
   print(diff_X, " , ", diff_Y)
 
   if diff_X == 1:
-    if diff_Y == 1:
-      return 7
-    elif diff_Y == -1:
-      return 5
-    else: #0
-      return 6
+    return 90
   elif diff_X == -1:
-    if diff_Y == 1:
-      return 1
-    elif diff_Y == -1:
-      return 3
-    else: #0
-      return 2
+    return 270
   else: #0 
     if diff_Y == 1:
       return 0
     elif diff_Y == -1:
-      return 4
+      return 180
     else: #0
       return None
 
 
-# OTHER ==============================================
+# LOOP ==============================================================================================
 
-def print_field():
-  for tileList in GLOBALS.TILES:
-    for tile in tileList:
-      print(str(tile.tileType), end=" ")
+def runAlgorithm():
+  moved = False
+  extendField()
+
+  print("After Extending print:")
+  print_field(0)
+  print()
+  print_field(2)
+  print()
+  print_field(3)
+
+  GLOBALS.ANGLE_START = time.time_ns()
+
+  while (not moved):
+    adjacentTasks(GLOBALS.STARTING_TILE)
+    lowestTile = getLowest(GLOBALS.OPEN_LIST)
+    degreeNeeded = getDegree(lowestTile)
+    print("DEGREE: ", degreeNeeded)
+    rotate(degreeNeeded)
+    print(GLOBALS.ANGLE)
+    #otateTimes(directionNeeded)
+
+    print_globals()
+
+    lowestTile.tileType = scanForWall()
+
+    if lowestTile.tileType == 1:
+      GLOBALS.OPEN_LIST.remove(lowestTile)
+      
+    else:
+      forward(GLOBALS.FOWARD_SECS)
+
+      moved = True
+
+    if len(GLOBALS.OPEN_LIST) <= 0:
+      print("NO PATH FOUND")
+      break
+
+    reorient()
+
+    print("In loop print:")
+    print_field(0)
     print()
 
-def print_field_values():
+  print()
+  print("After Calcalutions:")
+  print_field(1)
+
+  GLOBALS.CURRENT_X = lowestTile.positionX
+  GLOBALS.CURRENT_Y = lowestTile.positionY
+
+
+# DEBUG ==============================================
+
+def print_field(which_var):
   for tileList in GLOBALS.TILES:
     for tile in tileList:
-      print(str(tile.F_Value()), end=" ")
+      if which_var == 0 or which_var == None: #TILETYPE
+        print(str(tile.tileType), end=" ")
+      elif which_var == 1:  #FIELD VALUES
+        print(str(tile.F_Value()), end=" ")
+      elif which_var == 2:  #X POS
+        print(str(tile.positionY), end=" ")
+      elif which_var == 3:  #Y POS
+        print(str(tile.positionX), end=" ")
+
     print()
-
-def print_field_Y_values():
-  for tileList in GLOBALS.TILES:
-    for tile in tileList:
-      print(str(tile.positionY), end=" ")
-    print()    
-
-def print_field_X_values():
-  for tileList in GLOBALS.TILES:
-    for tile in tileList:
-      print(str(tile.positionX), end=" ")
-    print()    
 
 def print_globals():
   print("CURRENT X: ", GLOBALS.CURRENT_X)
@@ -555,6 +470,8 @@ def print_globals():
   print()
   print("ANGLE: ", GLOBALS.ANGLE)
 
+#=======================================================================================================
+
 def main():
 
   #time.sleep(3)
@@ -564,96 +481,22 @@ def main():
   GLOBALS.GOAL_X = int(sys.argv[1])
   GLOBALS.GOAL_Y = int(sys.argv[2])
 
-  #Wait for 5 seconds to disconnect
-  #time.sleep(3)
+  #Setup stuff
   setupPins()
 
-  
   create_field()
 
   print("Testing print:")
-  print_field()
+  print_field(0)
   print("Finished Test Print")
 
 
-  #scanSurrondings()
-
-  #print()
-  #print("After Updating:")
-  #print_field()
-
-  #adjacentTasks(GLOBALS.STARTING_TILE)
-
+  #while (not GLOBALS.FOUND_GOAL) and (not GLOBALS.STUCK):
+  runAlgorithm()
   
-
-  #print_globals()
-
-
-
-  #THIS WILL END UP BEING MAIN LOOP
-
-  moved = False
-  extendField()
-
-  print("After Extending print:")
-  print_field()
-  print()
-  print_field_Y_values()
-  print()
-  print_field_X_values()
-
-  GLOBALS.ANGLE_START = time.time_ns()
-
-  while (not moved):
-    adjacentTasks(GLOBALS.STARTING_TILE)
-    lowestTile = getLowest(GLOBALS.OPEN_LIST)
-    directionNeeded = getDirection(lowestTile)
-    print("DIRE: ", directionNeeded)
-    rotateRightTo(direToDegree(directionNeeded))
-    #otateTimes(directionNeeded)
-
-    print_globals()
-
-    lowestTile.tileType = scanForWall()
-
-    if lowestTile.tileType == 1:
-      GLOBALS.OPEN_LIST.remove(lowestTile)
-      
-    else:
-      if (directionNeeded%2 == 0):
-        forward(GLOBALS.FOWARD_SECS - 0.15)
-      else:
-        forward(GLOBALS.FOWARD_SECS)
-      moved = True
-
-    if len(GLOBALS.OPEN_LIST) <= 0:
-      print("NO PATH FOUND")
-      break
-
-    reorient()
-
-
-    print("In loop print:")
-    print_field()
-    print()
-
-
-
-  print()
-  print("After Calcalutions:")
-  print_field_values()
-
-  GLOBALS.CURRENT_X = lowestTile.positionX
-  GLOBALS.CURRENT_Y = lowestTile.positionY
-
-
-
 
 def destory():
-  
   GPIO.cleanup()
-
-
 
 if __name__ == "__main__":
   try:

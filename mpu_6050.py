@@ -18,4 +18,4 @@ while True:
     print("Gyro Z : "+str(gyro_data['z']))
     print()
     print("-------------------------------")
-    time.sleep(3)
+    time.sleep(1)

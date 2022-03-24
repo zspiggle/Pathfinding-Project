@@ -6,6 +6,8 @@ from Motor import *
 
 class GLOBALS:
 
+  SCAN_DISTANCE = 17 #IN CM
+
   SPIN_SECS = 1#0.50
   FOWARD_SECS = 1
   SPEED = 1500
@@ -110,7 +112,7 @@ def getDistance():
 def scanForWall():
   scanDis = getDistance()
 
-  if(scanDis < 17):
+  if(scanDis < GLOBALS.SCAN_DISTANCE):
     return 1
   else:
     return 0

@@ -9,6 +9,8 @@ class GLOBALS:
 
   SPEED = 1250
 
+  SCAN_DISTANCE = 17 #IN CM
+
 
   STARTING_POINT_X = 0
   STARTING_POINT_Y = 0
@@ -131,7 +133,7 @@ def getDistance():
 def scanForWall():
   scanDis = getDistance()
 
-  if(scanDis < 17):
+  if(scanDis < GLOBALS.SCAN_DISTANCE):
     return 1
   else:
     return 0

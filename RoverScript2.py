@@ -467,7 +467,7 @@ def runAlgorithm():
   print("After Calcalutions:")
   print_field(1)
 
-  print(len(GLOBALS.OPEN_LIST), " OPEN")
+  #print(len(GLOBALS.OPEN_LIST), " OPEN")
 
 
 
@@ -535,12 +535,13 @@ def main():
     runAlgorithm()
   
 
-def destory():
+def main_destory():
   GPIO.cleanup()
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
 
 if __name__ == "__main__":
   try:
     main()
   except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the child program destroy() will be  executed.
-    destroy()
+    main_destory()
 

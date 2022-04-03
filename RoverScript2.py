@@ -534,6 +534,7 @@ def main():
   while (not GLOBALS.FOUND_GOAL) and (not GLOBALS.STUCK):
     runAlgorithm()
   
+  GPIO.cleanup()
 
 def main_destory():
   GPIO.cleanup()

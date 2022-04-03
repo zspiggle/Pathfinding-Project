@@ -536,13 +536,14 @@ def main():
   
   GPIO.cleanup()
 
-def main_destory():
-  GPIO.cleanup()
+def main_destroy():
   GLOBALS.PWM.setMotorModel(0,0,0,0)
+  GPIO.cleanup()
+  
 
 if __name__ == "__main__":
   try:
     main()
   except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the child program destroy() will be  executed.
-    main_destory()
+    main_destroy()
 

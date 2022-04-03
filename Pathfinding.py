@@ -50,9 +50,6 @@ class Window(tk.Frame):
 
   canvas = None
 
-  
-
-  
 
   upperFrame = None
   analyticFrame = None

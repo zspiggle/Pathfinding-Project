@@ -38,7 +38,6 @@ def getDistance():
   print(3)
   while GPIO.input(ECHO) == 0:
     pass
-    print("Stuck")
   start = time.time()
 
   print(4)

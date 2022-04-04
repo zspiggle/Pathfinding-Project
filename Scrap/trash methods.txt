@@ -1,3 +1,19 @@
+
+def rotateRight(secs):
+  #GLOBALS.PWM.setMotorModel(1500,1500,-1500,-1500) 
+  GLOBALS.PWM.setMotorModel(GLOBALS.SPEED,GLOBALS.SPEED,-GLOBALS.SPEED,-GLOBALS.SPEED) 
+  time.sleep(secs)
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+
+def rotateLeft(secs):
+  #GLOBALS.PWM.setMotorModel(-1500,-1500,1500,1500) 
+  GLOBALS.PWM.setMotorModel(-GLOBALS.SPEED,-GLOBALS.SPEED,GLOBALS.SPEED,GLOBALS.SPEED) 
+  time.sleep(secs)
+  #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
+  GLOBALS.PWM.setMotorModel(0,0,0,0)
+
+
 def rotateRight45():
  
   startingAngle = GLOBALS.ANGLE

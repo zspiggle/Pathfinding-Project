@@ -1,7 +1,5 @@
 #IMPORTS
-from asyncore import loop
 import math
-from pickle import GLOBAL
 import tkinter as tk
 from tkinter.tix import WINDOW
 import threading

@@ -26,7 +26,7 @@ while True:
   if command == "d":
     ser.write(b"d")
     print("Attempting to drive")
-  elif command == "k":
+  elif command == "r":
     ser.write(b"r")
     print("Attempting to turn right")
   elif command == "l":

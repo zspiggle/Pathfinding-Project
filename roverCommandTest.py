@@ -7,6 +7,7 @@ def print_commands():
   print("   d - Drive Forward")
   print("   r - Turn Right")
   print("   l - Turn Left")
+  print("   s - Stop")
   print("   x - Exit Program")
 
 try:
@@ -31,6 +32,9 @@ while True:
   elif command == "l":
     ser.write(b"l")
     print("Attempting to turn left")
+  elif command == "s":
+    ser.write(b"s")
+    print("STOP!")
   elif command == "x":
     print("Exiting...")
     exit()

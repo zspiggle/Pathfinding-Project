@@ -2,9 +2,15 @@ SER_PORT = "/dev/ttyS0"
 
 import serial
 
+f = "f"
+r = "r"
+l = "l"
+s = "s"
+x = "x"
+
 def print_commands():
   print("Available commands:")
-  print("   d - Drive Forward")
+  print("   f - Drive Forward")
   print("   r - Turn Right")
   print("   l - Turn Left")
   print("   s - Stop")
@@ -23,8 +29,8 @@ print_commands()
 while True:
   command = input("ENTER COMMAND: ")
 
-  if command == "d":
-    ser.write(b"d")
+  if command == "f":
+    ser.write(b"f")
     print("Attempting to drive")
   elif command == "r":
     ser.write(b"r")

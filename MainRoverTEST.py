@@ -1,5 +1,4 @@
 import math
-from threading import Thread
 from mpu6050 import mpu6050
 import time
 import sys
@@ -9,7 +8,7 @@ import serial
 
 class GLOBALS:
   
-  SCAN_DISTANCE = 17 #IN CM
+  SCAN_DISTANCE = 10 #IN CM
 
 
   STARTING_POINT_X = 0
@@ -24,8 +23,8 @@ class GLOBALS:
   X_OFFSET = 0
   Y_OFFSET = 0
 
-  TRIG = 27
-  ECHO = 22
+  TRIG = 23
+  ECHO = 24
 
 
   TILES = []
@@ -104,8 +103,8 @@ def setupPins():
   #SETUP GPIO PINS
   GPIO.setmode(GPIO.BCM)
 
-  TRIG = 27
-  ECHO = 22
+  TRIG = 23
+  ECHO = 24
 
   GPIO.setup(TRIG, GPIO.OUT)
   GPIO.output(TRIG,0)
@@ -122,15 +121,21 @@ def getDistance():
   time.sleep(0.00001)
   GPIO.output(GLOBALS.TRIG, 0)
 
+
   while GPIO.input(GLOBALS.ECHO) == 0:
     pass
   start = time.time()
+
 
   while GPIO.input(GLOBALS.ECHO) == 1:
     pass
   stop = time.time()
 
-  return ((stop - start) * 17000) #Centimeters, 170 for "meters"
+  value = ((stop - start) * 17000)
+  print("DISTANCE : ", value)
+
+
+  return value#((stop - start) * 17000) #Centimeters, 170 for "meters"
 
 def scanForWall():
   scanDis = getDistance()
@@ -153,7 +158,7 @@ def forward(dist):
 
   #print("DONE DIS")
 
-  Thread.sleep(2)
+  time.sleep(1)
 
   GLOBALS.SER.write(b"s")
   GLOBALS.DISTANCE = 0 #MAY CHANGE THIS LINE #NOTE I UNCOMMENTED THIS LINE WITHOUT TESTING
@@ -175,7 +180,7 @@ def rotateRight(angle):
   #while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle #+ GLOBALS.ALLOWED_OFFSET))):
   #  adjustAngle()
 
-  Thread.sleep(2)
+  time.sleep(1)
 
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   GLOBALS.SER.write(b"s")
@@ -191,7 +196,7 @@ def rotateLeft(angle):
   #while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
   #  adjustAngle()
 
-  Thread.sleep(2)
+  time.sleep(1)
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   GLOBALS.SER.write(b"s")
 
@@ -202,7 +207,7 @@ def reorient():
   GLOBALS.SER.write(b"r")
   
 
-  Thread.sleep(2)
+  time.sleep(1)
 
   #while (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET)):
   #  adjustAngle()
@@ -466,7 +471,8 @@ def runAlgorithm():
       print("NO PATH FOUND")
       break
 
-  reorient()
+  time.sleep(1)
+  #reorient()
 
   print("In loop print:")
   print_field(0)

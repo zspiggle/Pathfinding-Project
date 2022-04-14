@@ -35,14 +35,14 @@ void loop() {
 
     //f for forward
     if (command == "f"){
-      Steve.drive(throttle(25));
+      Steve.drive(throttle(5));
       Steve.turn(0);
     //r for turn right
     } else if (command == "r"){
-      Steve.turn(64);
+      Steve.turn(16);
     //l for turn left
     } else if (command == "l"){
-      Steve.turn(-64);
+      Steve.turn(-16);
     }
   }
 

@@ -1,15 +1,15 @@
 import math
-from mpu6050 import mpu6050
-import time
 import sys
+import time
+
 import RPi.GPIO as GPIO
 import serial
+from mpu6050 import mpu6050
 
 
 class GLOBALS:
   
-  SCAN_DISTANCE = 10 #IN CM
-
+  SCAN_DISTANCE = 56 #10 #IN CM
 
   STARTING_POINT_X = 0
   STARTING_POINT_Y = 0
@@ -46,13 +46,13 @@ class GLOBALS:
   ANGLE_END = 0
   ANGLE = 0
 
-  ALLOWED_OFFSET = 0.5
+  ALLOWED_OFFSET = 3 #0.5 (I Think this is the issue)
 
   MOVE_START = time.time_ns()
   MOVE_END = 0
   DISTANCE = 0
 
-  MOVE_DISTANCE = 3.75 #13 will work for rover
+  MOVE_DISTANCE = 8 #13 will work for rover
 
   STUCK = False
   FOUND_GOAL = False
@@ -151,21 +151,23 @@ def scanForWall():
 def forward(dist):
   print("Moving Rover Forward")
   GLOBALS.SER.write(b"f")
-  #GLOBALS.MOVE_START = time.time_ns()
+  GLOBALS.MOVE_START = time.time_ns()
 
-  #while(GLOBALS.DISTANCE < dist):
-    #print("DISTANCE: ", GLOBALS.DISTANCE)
-  #  adjustPos()
-
+  print("before DISTANCE: ", GLOBALS.DISTANCE)
+  while(GLOBALS.DISTANCE < dist):
+    adjustPos()
+    
+  print("After DISTANCE: ", GLOBALS.DISTANCE)
   #print("DONE DIS")
 
-  time.sleep(3)
+  #time.sleep(3)
 
   print("STOPPING")
   GLOBALS.SER.write(b"s")
-  time.sleep(2)
+  GLOBALS.DISTANCE = 0
+  #time.sleep(2)
 
-  GLOBALS.DISTANCE = 0 #MAY CHANGE THIS LINE #NOTE I UNCOMMENTED THIS LINE WITHOUT TESTING
+  #GLOBALS.DISTANCE = 0 #MAY CHANGE THIS LINE #NOTE I UNCOMMENTED THIS LINE WITHOUT TESTING
 
 def rotate(angle):
   if (0 < (GLOBALS.ANGLE - angle)):
@@ -179,18 +181,19 @@ def rotateRight(angle):
     return
   newAngle = angle
 
-  #GLOBALS.ANGLE_START = time.time_ns()
+  GLOBALS.ANGLE_START = time.time_ns()
   GLOBALS.SER.write(b"r")
 
-  #while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle #+ GLOBALS.ALLOWED_OFFSET))):
-  #  adjustAngle()
+  while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
+    adjustAngle()
+    print("ANGLE: ", GLOBALS.ANGLE)
 
-  time.sleep(3)
+  #time.sleep(3)
 
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   print("STOPPING")
   GLOBALS.SER.write(b"s")
-  time.sleep(2)
+  #time.sleep(2)
 
 def rotateLeft(angle):
   print("Rotating Rover Left")
@@ -198,17 +201,18 @@ def rotateLeft(angle):
     return
   newAngle = angle
 
-  #GLOBALS.ANGLE_START = time.time_ns()
+  GLOBALS.ANGLE_START = time.time_ns()
   GLOBALS.SER.write(b"l")
 
-  #while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
-  #  adjustAngle()
+  while ((GLOBALS.ANGLE <= correctedAngle(newAngle - GLOBALS.ALLOWED_OFFSET)) or (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET))):
+    adjustAngle()
+    print("ANGLE: ", GLOBALS.ANGLE)
 
-  time.sleep(3)
+  #time.sleep(3)
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   print("STOPPING")
   GLOBALS.SER.write(b"s")
-  time.sleep(2)
+  #time.sleep(2)
 
 def reorient():
   newAngle = 0
@@ -217,7 +221,7 @@ def reorient():
   GLOBALS.SER.write(b"r")
   
 
-  time.sleep(3)
+  #time.sleep(3)
 
   #while (GLOBALS.ANGLE >= correctedAngle(newAngle + GLOBALS.ALLOWED_OFFSET)):
   #  adjustAngle()
@@ -225,7 +229,7 @@ def reorient():
   #ALWAYS MAKE SURE TO CLEAR AFTERWARDS
   print("STOPPING")
   GLOBALS.SER.write(b"s")
-  time.sleep(2)
+  #time.sleep(2)
   #rotateTimes(8 - GLOBALS.DIRECTION, True)
   #print("REORIENTING...")
 
